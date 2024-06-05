@@ -57,6 +57,9 @@ export const resolveDID = async (log: DIDLog, options: {versionId?: number, vers
   let previousLogEntryHash = '';
   let i = 0;
   let deactivated: boolean | null = null;
+  let prerotation = false;
+  let prerotationInitialized: number | null = null;
+  let nextKeys: string[] = [];
   for (const entry of resolutionLog) {
     if (entry[1] !== versionId + 1) {
       throw new Error(`versionId '${entry[1]}' in log doesn't match expected '${versionId}'.`);
@@ -86,6 +89,11 @@ export const resolveDID = async (log: DIDLog, options: {versionId?: number, vers
       if (!verified) {
         throw new Error(`version ${versionId} failed verification of the proof.`)
       }
+      if (entry[3].prerotation) {
+        prerotation = true;
+        prerotationInitialized = 1;
+        nextKeys += entry[3].nextKeys;
+      }
     } else {
       // versionId > 1
       if (Object.keys(entry[4]).some((k: string) => k === 'value')) {
@@ -109,6 +117,14 @@ export const resolveDID = async (log: DIDLog, options: {versionId?: number, vers
       if (entry[3].deactivated) {
         deactivated = true;
       }
+      if(prerotation) {
+        newKeysAreValid(options)
+      }
+      if (entry[3].prerotation) {
+        prerotation = true;
+        prerotationInitialized = versionId;
+        nextKeys.push(entry[3].nextKeys ?? [])
+      }
     }
     doc = clone(newDoc);
     did = doc.id;
@@ -129,14 +145,16 @@ export const resolveDID = async (log: DIDLog, options: {versionId?: number, vers
   }
   return {did, doc, meta: {
     versionId, created, updated, previousLogEntryHash, scid,
-    ...(deactivated ? {deactivated}: {})
+    ...(deactivated ? {deactivated}: {}),
+    prerotation,
+    ...(prerotation ? {prerotationInitialized} : {})
   }}
 }
 
 export const updateDID = async (options: UpdateDIDInterface): Promise<{did: string, doc: any, meta: any, log: DIDLog}> => {
-  newKeysAreValid(options);
   const {log, authKey, context, verificationMethods, services, alsoKnownAs, controller, domain} = options;
   let {did, doc, meta} = await resolveDID(log);
+  newKeysAreValid(options, meta);
   if (domain) {
     did = `did:${METHOD}:${domain}:${log[0][3].scid}`;
   }

@@ -74,20 +74,20 @@ test("Resolve DID latest", async () => {
   expect(resolved.meta.versionId).toBe(4);
 });
 
-// test.only("Prerotate key is required if param is set in create", async () => {
-//   let err;
-//   const authKey1 = {type: 'authentication' as const, ...availableKeys.ed25519.shift()};
-//   const {did, log} = await createDID({
-//     domain: "example.com",
-//     verificationMethods: [authKey1],
-//     prerotate: true
-//   });
-//   try {
-//     await resolveDID(log)
-//   } catch(e) {
-//     err = e;
-//   }
+test("Prerotation key is required if param is set in create", async () => {
+  let err;
+  const authKey1 = {type: 'authentication' as const, ...availableKeys.ed25519.shift()};
+  const {did, log} = await createDID({
+    domain: "example.com",
+    verificationMethods: [authKey1],
+    prerotation: true
+  });
+  try {
+    await resolveDID(log)
+  } catch(e) {
+    err = e;
+  }
   
-//   expect(err).toBeDefined();
-//   console.log(did, log);
-// });
+  expect(err).toBeDefined();
+  console.log(did, log);
+});

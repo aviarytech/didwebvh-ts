@@ -44,9 +44,11 @@ export const documentStateIsValid = async (authKey: VerificationMethod, doc: any
   return true;
 }
 
-export const newKeysAreValid = (options: CreateDIDInterface | UpdateDIDInterface) => {
-  if(!options.verificationMethods?.find(vm => vm.type === 'authentication')) {
+export const newKeysAreValid = (newVMs: VerificationMethod[], meta?: {prerotation?: boolean}) => {
+  if(!newVMs.find(vm => vm.type === 'authentication')) {
     throw new Error("DIDDoc MUST contain at least one authentication key type");
   }
-  if(options.prerotate) {}
+  if(meta?.prerotation) {
+    options.verificationMethods
+  }
 }

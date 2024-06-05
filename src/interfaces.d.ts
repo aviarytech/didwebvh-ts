@@ -49,7 +49,7 @@ interface CreateDIDInterface {
   context?: string | string[];
   verificationMethods?: VerificationMethod[];
   created?: Date;
-  prerotate?: boolean;
+  prerotation?: boolean;
 }
 
 interface SignDIDDocInterface {
@@ -68,7 +68,7 @@ interface UpdateDIDInterface {
   alsoKnownAs?: string[];
   domain?: string;
   updated?: Date;
-  prerotate?: boolean;
+  prerotation?: boolean;
   deactivated?: boolean;
 }
 
