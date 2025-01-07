@@ -9,8 +9,7 @@ interface DIDResolutionMeta {
   portable: boolean;
   nextKeyHashes: string[];
   deactivated: boolean;
-  witnesses: string[],
-  witnessThreshold: number;
+  witness?: WitnessParameter | undefined | null;
 }
 
 interface DIDDoc {
@@ -44,6 +43,21 @@ interface DataIntegrityProof {
   proofPurpose: string;
 }
 
+interface WitnessParameter {
+  threshold: number;
+  witnesses: WitnessEntry[];
+}
+
+interface WitnessEntry {
+  id: string;  // did:key DID
+  weight: number;
+}
+
+interface WitnessProofFile {
+  versionId: string;
+  proof: DataIntegrityProof[];
+}
+
 interface DIDLogEntry {
   versionId: string;
   versionTime: string;
@@ -54,11 +68,10 @@ interface DIDLogEntry {
     prerotation?: boolean;
     nextKeyHashes?: string[];
     portable?: boolean;
-    witnesses?: string[];
-    witnessThreshold?: number;
+    witness?: WitnessParameter | null;
     deactivated?: boolean;
   };
-  state: DIDDoc; // Change this to specifically hold the DID document
+  state: DIDDoc;
   proof?: DataIntegrityProof[];
 }
 
@@ -92,8 +105,7 @@ interface CreateDIDInterface {
   prerotation?: boolean;
   nextKeyHashes?: string[];
   portable?: boolean;
-  witnesses?: string[];
-  witnessThreshold?: number;
+  witness?: WitnessParameter | null;
 }
 
 interface SignDIDDocInterface {
@@ -116,11 +128,19 @@ interface UpdateDIDInterface {
   deactivated?: boolean;
   prerotation?: boolean;
   nextKeyHashes?: string[];
-  witnesses?: string[];
-  witnessThreshold?: number;
+  witness?: WitnessParameter | undefined | null;
+  witnessProofs?: WitnessProofFile[];
 }
 
 interface DeactivateDIDInterface {
   log: DIDLog;
   signer: (doc: any) => Promise<{proof: any}>;
+}
+
+interface ResolutionOptions {
+  versionNumber?: number;
+  versionId?: string;
+  versionTime?: Date;
+  verificationMethod?: string;
+  witnessProofs?: WitnessProofFile[];
 }

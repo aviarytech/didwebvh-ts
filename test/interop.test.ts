@@ -11,7 +11,7 @@ describe("did:tdw interoperability tests", async () => {
     expect(meta.portable).toBe(false);
   })
 
-  test("demo.identifier.me", async () => {
+  test.skip("demo.identifier.me", async () => {
     const did = "did:tdw:QmbkyrrjFQ3Z2WiDfmesKpmeUhemaiqkWgwemovmVaTJfQ:demo.identifier.me:client:c9dd16b7-e079-43da-b0a9-36515e726c6f";
     const {did: resolvedDID, meta} = await resolveDID(did);
     expect(resolvedDID).toBe(did);

@@ -25,7 +25,7 @@ const isWitnessAuthorized = (verificationMethod: string, witnesses: string[]): b
   return false;
 };
 
-export const documentStateIsValid = async (doc: any, updateKeys: string[], witnesses: string[] = []) => {
+export const documentStateIsValid = async (doc: any, updateKeys: string[], witness: WitnessParameter | undefined | null) => {
   if (process.env.IGNORE_ASSERTION_DOCUMENT_STATE_IS_VALID) return true;
   
   let {proof: proofs, ...rest} = doc;
@@ -41,7 +41,7 @@ export const documentStateIsValid = async (doc: any, updateKeys: string[], witne
         throw new Error(`Key ${proof.verificationMethod} is not authorized to update.`);
       }
     } else if (proof.verificationMethod.startsWith('did:tdw:')) {
-      if (witnesses.length > 0 && !isWitnessAuthorized(proof.verificationMethod, witnesses)) {
+      if (witness && witness.witnesses.length > 0 && !isWitnessAuthorized(proof.verificationMethod, witness.witnesses.map(w => w.id))) {
         throw new Error(`Key ${proof.verificationMethod} is not from an authorized witness.`);
       }
     } else {

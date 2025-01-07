@@ -4,11 +4,12 @@ import { join } from 'path';
 import { readLogFromDisk, readLogFromString } from "../src/utils";
 import { $ } from "bun";
 import { resolveDIDFromLog } from "../src/method";
+import { isWitnessServerRunning } from "./utils";
+
+const TEST_DIR = './test/temp-cli-e2e';
 
 describe("CLI End-to-End Tests", () => {
-  const TEST_DIR = './test/temp-cli-e2e';
   const TEST_LOG_FILE = join(TEST_DIR, 'did.jsonl');
-  const WITNESS_SERVER_URL = "http://localhost:8000";
   let currentDID: string;
   
   beforeAll(() => {
@@ -131,47 +132,6 @@ describe("CLI End-to-End Tests", () => {
     const log = readLogFromDisk(TEST_LOG_FILE);
     const lastEntry = log[log.length - 1];
     expect(lastEntry.parameters.deactivated).toBe(true);
-  });
-
-  test("Create DID with witnesses using CLI", async () => {
-    const witnessLogFile = join(TEST_DIR, 'did-witness.jsonl');
-    
-    try {
-      // First, fetch the witness's DID log directly
-      const witnessProc = await $`curl http://localhost:8000/.well-known/did.jsonl`.quiet();
-      if (witnessProc.exitCode !== 0) {
-        console.error('Error fetching witness DID:', witnessProc.stderr.toString());
-        throw new Error('Failed to fetch witness DID');
-      }
-
-      // Parse the witness DID log
-      const witnessLogStr = witnessProc.stdout.toString();
-      
-      // Parse the witness log and get the DID from the state
-      const witnessLog = readLogFromString(witnessLogStr);
-      const witnessDID = witnessLog[0].state.id;
-      
-      // Run the CLI create command with witness
-      const proc = await $`bun run cli create --domain localhost:8000 --output ${witnessLogFile} --witness ${witnessDID} --witness-threshold 1`.quiet();
-
-      expect(proc.exitCode).toBe(0);
-      
-      // Verify the witness configuration
-      const log = readLogFromDisk(witnessLogFile);
-      
-      // Add null checks for TypeScript
-      if (!log[0]?.parameters?.witnesses) {
-        throw new Error('Missing witnesses in parameters');
-      }
-      
-      expect(log[0].parameters.witnesses).toHaveLength(1);
-      expect(log[0].parameters.witnesses[0]).toBe(witnessDID!);
-      expect(log[0].parameters.witnessThreshold).toBe(1);
-      expect(log[0].proof).toHaveLength(2); // Controller proof + witness proof
-    } catch (error) {
-      console.error('Error in witness test:', error);
-      throw error;
-    }
   });
 
   test("Create DID with prerotation", async () => {
@@ -321,3 +281,58 @@ describe("CLI End-to-End Tests", () => {
     expect(output).toContain('Metadata');
   });
 }); 
+
+describe("Witness CLI End-to-End Tests", async () => {
+  const WITNESS_SERVER_URL = "http://localhost:8000";
+  const serverRunning = await isWitnessServerRunning(WITNESS_SERVER_URL);
+
+  if (!serverRunning) {
+    describe("Witness functionality", () => {
+      test.skip("Witness server is not running", () => {
+        // This test will be skipped and shown in the test output
+      });
+    });
+    return;
+  }
+
+  test("Create DID with witnesses using CLI", async () => {
+    const witnessLogFile = join(TEST_DIR, 'did-witness.jsonl');
+    
+    try {
+      // First, fetch the witness's DID log directly
+      const witnessProc = await $`curl ${WITNESS_SERVER_URL}/.well-known/did.jsonl`.quiet();
+      if (witnessProc.exitCode !== 0) {
+        console.error('Error fetching witness DID:', witnessProc.stderr.toString());
+        throw new Error('Failed to fetch witness DID');
+      }
+
+      // Parse the witness DID log
+      const witnessLogStr = witnessProc.stdout.toString();
+      
+      // Parse the witness log and get the DID from the state
+      const witnessLog = readLogFromString(witnessLogStr);
+      const witnessDID = witnessLog[0].state.id;
+      
+      // Run the CLI create command with witness
+      const proc = await $`bun run cli create --domain localhost:8000 --output ${witnessLogFile} --witness ${witnessDID} --witness-threshold 1`.quiet();
+
+      expect(proc.exitCode).toBe(0);
+      
+      // Verify the witness configuration
+      const log = readLogFromDisk(witnessLogFile);
+      
+      // Add null checks for TypeScript
+      if (!log[0]?.parameters?.witness) {
+        throw new Error('Missing witnesses in parameters');
+      }
+      
+      expect(log[0].parameters.witness).toHaveLength(1);
+      expect(log[0].parameters.witness.witnesses[0].id).toBe(witnessDID!);
+      expect(log[0].parameters.witness.threshold).toBe(1);
+      expect(log[0].proof).toHaveLength(2); // Controller proof + witness proof
+    } catch (error) {
+      console.error('Error in witness test:', error);
+      throw error;
+    }
+  });
+});
