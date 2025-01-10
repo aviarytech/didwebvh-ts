@@ -1,0 +1,14 @@
+[
+  {
+    "versionId": "did:tdw:1234:example.com:1234",
+    "proof": [
+      {
+        "type": "DataIntegrityProof",
+        "cryptosuite": "eddsa-jcs-2022",
+        "verificationMethod": "did:tdw:1234:example.com:1234#key1",
+        "created": "2023-06-18T21:19:10Z",
+        "proofValue": "z58xkL6dbDRJjFVkBxhNHXNHFnZzZk..."
+      }
+    ]
+  }
+]

@@ -22,3 +22,7 @@ export const getLogFileForSCID = async ({params: {scid}}: {params: {scid: string
 export const getLogFileForBase = async () => {
   return await Bun.file(`./src/routes/.well-known/did.jsonl`).text();
 }
+
+export const getWitnessProofFile = async () => {
+  return await Bun.file(`./src/routes/.well-known/did-witness.json`).text();
+}

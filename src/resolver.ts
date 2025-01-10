@@ -1,23 +1,11 @@
 import { Elysia } from 'elysia'
-import { getLatestDIDDoc, getLogFileForBase, getLogFileForSCID } from './routes/did';
+import { getLatestDIDDoc, getLogFileForBase, getLogFileForSCID, getWitnessProofFile } from './routes/did';
 import { createWitnessProof } from './witness';
 
 const app = new Elysia()
   .get('/health', 'ok')
   .get('/.well-known/did.jsonl', () => getLogFileForBase())
-  .post('/witness', async ({body}) => {
-    try {
-      const result = await createWitnessProof((body as any).log);
-      if ('error' in result) {
-        throw new Error(result.error);
-      }
-      console.log(`Signed with VM`, (result as any).proof.verificationMethod)
-      return { proof: result.proof };
-    } catch (error) {
-      console.error('Error creating witness proof:', error);
-      return new Response(JSON.stringify({ error }), { status: 400 });
-    }
-  })
+  .get('/.well-known/did-witness.json', () => getWitnessProofFile())
   .group('/:id', app => {
     return app
       .get('/did.jsonl', ({params}) => getLogFileForSCID({params: {scid: params.id}}))

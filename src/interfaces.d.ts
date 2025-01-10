@@ -53,7 +53,7 @@ interface WitnessEntry {
   weight: number;
 }
 
-interface WitnessProofFile {
+interface WitnessProofFileEntry {
   versionId: string;
   proof: DataIntegrityProof[];
 }
@@ -129,7 +129,7 @@ interface UpdateDIDInterface {
   prerotation?: boolean;
   nextKeyHashes?: string[];
   witness?: WitnessParameter | undefined | null;
-  witnessProofs?: WitnessProofFile[];
+  witnessProofs?: WitnessProofFileEntry[];
 }
 
 interface DeactivateDIDInterface {
@@ -142,5 +142,5 @@ interface ResolutionOptions {
   versionId?: string;
   versionTime?: Date;
   verificationMethod?: string;
-  witnessProofs?: WitnessProofFile[];
+  witnessProofs?: WitnessProofFileEntry[];
 }

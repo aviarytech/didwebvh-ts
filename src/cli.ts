@@ -69,8 +69,7 @@ export async function handleCreate(args: string[]) {
       verificationMethods: [authKey],
       portable,
       prerotation,
-      witnesses,
-      witnessThreshold,
+      witness: {witnesses: witnesses?.map(witness => ({id: witness, weight: 1})) ?? [], threshold: witnessThreshold ?? 0},
       nextKeyHashes,
     });
 
@@ -224,8 +223,7 @@ export async function handleUpdate(args: string[]) {
       updateKeys: [authKey.publicKeyMultibase!],
       verificationMethods,
       prerotation,
-      witnesses,
-      witnessThreshold,
+      witness: {witnesses: witnesses?.map(witness => ({id: witness, weight: 1})) ?? [], threshold: witnessThreshold ?? 0},
       services,
       alsoKnownAs
     });

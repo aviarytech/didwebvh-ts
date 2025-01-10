@@ -1,4 +1,4 @@
-import { clone, collectWitnessProofs, createDate, createDIDDoc, createSCID, deriveHash, fetchLogFromIdentifier, findVerificationMethod, normalizeVMs } from "./utils";
+import { clone, createDate, createDIDDoc, createSCID, deriveHash, fetchLogFromIdentifier, findVerificationMethod, normalizeVMs } from "./utils";
 import { BASE_CONTEXT, METHOD, PLACEHOLDER, PROTOCOL } from './constants';
 import { documentStateIsValid, hashChainValid, newKeysAreInNextKeys, scidIsFromHash } from './assertions';
 
@@ -42,16 +42,6 @@ export const createDID = async (options: CreateDIDInterface): Promise<{did: stri
   let allProofs = [signedDoc.proof];
   prelimEntry.proof = allProofs;
 
-  if (options.witness && options.witness.witnesses && options.witness.witnesses.length > 0) {
-    const witnessProofs = await collectWitnessProofs(
-      options.witness.witnesses.map(w => w.id),
-      [prelimEntry]
-    );
-    if (witnessProofs.length > 0) {
-      allProofs = [...allProofs, ...witnessProofs];
-      prelimEntry.proof = allProofs;
-    }
-  }
   return {
     did: prelimEntry.state.id!,
     doc: prelimEntry.state,
@@ -280,15 +270,6 @@ export const updateDID = async (options: UpdateDIDInterface): Promise<{did: stri
     ...params
   };
 
-  if (newMeta.witness && newMeta.witness.witnesses.length > 0) {
-    const witnessProofs = await collectWitnessProofs(
-      newMeta.witness.witnesses.map(w => w.id),
-      [...log, logEntry] as DIDLog
-    );
-    if (witnessProofs.length > 0) {
-      logEntry.proof = [...logEntry.proof, ...witnessProofs];
-    }
-  }
   return {
     did,
     doc: newDoc,
