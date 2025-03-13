@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, test } from "bun:test";
-import { createDID, resolveDIDFromLog, updateDID } from "../src/method";
+import { createDID, resolveDIDFromLog, updateDID, resolveDID } from "../src/method";
 import type { DIDLog, VerificationMethod } from "../src/interfaces";
 import { generateTestVerificationMethod, createTestSigner, TestCryptoImplementation } from "./utils";
 
@@ -146,5 +146,28 @@ describe("Not So Happy Path Tests", () => {
     const mockError = new Error('Invalid witness ID');
     
     expect(mockError.message).toContain('Invalid witness ID');
+  });
+
+  test("Reject DID with invalid SCID in Method specific identifier", async () => {
+    // Temporarily disable the SCID check bypass
+    const originalIgnoreValue = process.env.IGNORE_ASSERTION_SCID_IS_FROM_HASH;
+    process.env.IGNORE_ASSERTION_SCID_IS_FROM_HASH = 'false';
+
+    try {
+      // Create a modified log with an incorrect SCID
+      const modifiedLog = JSON.parse(JSON.stringify(initialDID.log));
+      
+      // Tamper with the SCID in the parameters
+      const originalSCID = modifiedLog[0].parameters.scid;
+      modifiedLog[0].parameters.scid = originalSCID + 'tampered';
+      
+      // Attempt to resolve the DID from the tampered log
+      expect(resolveDIDFromLog(modifiedLog, {
+        verifier: testImplementation
+      })).rejects.toThrow(`SCID '${originalSCID}tampered' not derived from logEntryHash`);
+    } finally {
+      // Restore the original environment variable value
+      process.env.IGNORE_ASSERTION_SCID_IS_FROM_HASH = originalIgnoreValue;
+    }
   });
 });

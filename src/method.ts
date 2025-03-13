@@ -76,13 +76,24 @@ export const resolveDID = async (did: string, options: ResolutionOptions & { wit
   const activeDIDs = await getActiveDIDs();
   const controlled = activeDIDs.includes(did);
   const log = await fetchLogFromIdentifier(did, controlled);
-  
   if (log.length === 0) {
     throw new Error(`DID ${did} not found`);
   }
 
+  const resolvedDID = await resolveDIDFromLog(log, { ...options });
+
+  const didParts = did.split(':');
+  if (didParts.length >= 3) {
+    const scidFromIdentifier = didParts[2];
+    const logEntryHash = resolvedDID.meta.previousLogEntryHash;
+    
+    if (logEntryHash && !await scidIsFromHash(scidFromIdentifier, logEntryHash)) {
+      throw new Error(`SCID in DID '${scidFromIdentifier}' not derived from log entry hash '${logEntryHash}'`);
+    }
+  }
+
   return {
-    ...(await resolveDIDFromLog(log, { ...options })), 
+    ...resolvedDID, 
     controlled
   };
 }

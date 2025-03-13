@@ -97,6 +97,8 @@ const app = new Elysia()
       }
 
       const [didPart, ...pathParts] = id.split('/');
+      console.log(`Received request for DID: ${didPart}`);
+      
       if (pathParts.length === 0) {
         const options = {
           versionNumber: query.versionNumber ? parseInt(query.versionNumber as string) : undefined,
@@ -108,24 +110,41 @@ const app = new Elysia()
         };
         
         console.log(`Resolving DID ${didPart} with default verifier`);
-        return await resolveDID(didPart, options);
+        
+        try {
+          console.log(`Calling resolveDID for ${didPart}`);
+          const result = await resolveDID(didPart, options);
+          console.log(`Resolution succeeded for ${didPart}`);
+          return result;
+        } catch (error: any) {
+          console.error(`Resolution failed for ${didPart} with error:`, error.message);
+          throw error;
+        }
       }
       
       // For path-based resolution, also use the default verifier
-      const {did, doc, controlled} = await resolveDID(didPart, { verifier: defaultVerifier });
-      
-      const didParts = did.split(':');
-      const domain = didParts[didParts.length - 1];
-      const fileIdentifier = didParts[didParts.length - 2];
-      
-      return await getFile({
-        params: {
-          path: !controlled ? domain : fileIdentifier,
-          file: pathParts.join('/')
-        },
-        isRemote: !controlled,
-        didDocument: doc
-      });
+      console.log(`Path-based resolution for ${didPart}`);
+      try {
+        console.log(`Calling resolveDID for path-based resolution of ${didPart}`);
+        const {did, doc, controlled} = await resolveDID(didPart, { verifier: defaultVerifier });
+        console.log(`Path-based resolution succeeded for ${didPart}`);
+        
+        const didParts = did.split(':');
+        const domain = didParts[didParts.length - 1];
+        const fileIdentifier = didParts[didParts.length - 2];
+        
+        return await getFile({
+          params: {
+            path: !controlled ? domain : fileIdentifier,
+            file: pathParts.join('/')
+          },
+          isRemote: !controlled,
+          didDocument: doc
+        });
+      } catch (error: any) {
+        console.error(`Path-based resolution failed for ${didPart} with error:`, error.message);
+        throw error;
+      }
     } catch (error: unknown) {
       console.error('Error resolving identifier:', error);
       return new Response(JSON.stringify({
