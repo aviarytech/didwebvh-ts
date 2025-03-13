@@ -1,13 +1,11 @@
 import fs from 'node:fs';
-import bs58 from 'bs58'
 import { canonicalize } from 'json-canonicalize';
 import { config } from './config';
-import { nanoid } from 'nanoid';
-import { sha256 } from 'multiformats/hashes/sha2'
 import { resolveDIDFromLog } from './method';
-import type { CreateDIDInterface, DataIntegrityProof, DIDDoc, DIDLog, VerificationMethod, WitnessProofFileEntry } from './interfaces';
+import type { CreateDIDInterface, DIDDoc, DIDLog, VerificationMethod, WitnessProofFileEntry } from './interfaces';
 import { createBuffer, bufferToString } from './utils/buffer';
-import { join } from 'path';
+import { createMultihash, encodeBase58Btc, MultihashAlgorithm } from './utils/multiformats';
+import { createHash } from './utils/crypto';
 
 export const readLogFromDisk = (path: string): DIDLog => {
   return readLogFromString(fs.readFileSync(path, 'utf8'));
@@ -19,10 +17,13 @@ export const readLogFromString = (str: string): DIDLog => {
 
 export const writeLogToDisk = (path: string, log: DIDLog) => {
   try {
-    // Write first entry
+    const dir = path.substring(0, path.lastIndexOf('/'));
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+
     fs.writeFileSync(path, JSON.stringify(log[0]) + '\n');
     
-    // Append remaining entries
     for (let i = 1; i < log.length; i++) {
       fs.appendFileSync(path, JSON.stringify(log[i]) + '\n');
     }
@@ -44,7 +45,6 @@ export const writeVerificationMethodToEnv = (verificationMethod: VerificationMet
   };
 
   try {
-    // Read existing .env content
     let envContent = '';
     let existingData: any[] = [];
     
@@ -162,75 +162,137 @@ export const createSCID = async (logEntryHash: string): Promise<string> => {
 
 export const deriveHash = async (input: any): Promise<string> => {
   const data = canonicalize(input);
-  const hash = await sha256.digest(new TextEncoder().encode(data));
-  return bs58.encode(hash.bytes)
+  const hash = await createHash(data);
+  const multihash = createMultihash(new Uint8Array(hash), MultihashAlgorithm.SHA2_256);
+  return encodeBase58Btc(multihash);
 }
 
 export const deriveNextKeyHash = async (input: string): Promise<string> => {
-  const hash = await sha256.digest(new TextEncoder().encode(input));
-  return bs58.encode(hash.bytes);
+  const hash = await createHash(input);
+  const multihash = createMultihash(new Uint8Array(hash), MultihashAlgorithm.SHA2_256);
+  return encodeBase58Btc(multihash);
 }
 
 export const createDIDDoc = async (options: CreateDIDInterface): Promise<{doc: DIDDoc}> => {
   const {controller} = options;
-  const {all} = normalizeVMs(options.verificationMethods, controller);
-  return {
-    doc: {
-      "@context": [
-        "https://www.w3.org/ns/did/v1",
-        "https://w3id.org/security/multikey/v1"
-      ],
-      id: controller,
-      controller,
-      ...all
-    }
+  const all = normalizeVMs(options.verificationMethods, controller);
+  
+  // Create the base document
+  const doc: DIDDoc = {
+    "@context": [
+      "https://www.w3.org/ns/did/v1",
+      "https://w3id.org/security/multikey/v1"
+    ],
+    id: controller,
+    controller,
   };
+
+  // Add verification methods and relationships from normalizeVMs
+  if (all && typeof all === 'object') {
+    if (all.verificationMethod) {
+      doc.verificationMethod = all.verificationMethod;
+    }
+    
+    if (all.authentication) {
+      doc.authentication = all.authentication;
+    }
+    
+    if (all.assertionMethod) {
+      doc.assertionMethod = all.assertionMethod;
+    }
+    
+    if (all.keyAgreement) {
+      doc.keyAgreement = all.keyAgreement;
+    }
+    
+    if (all.capabilityDelegation) {
+      doc.capabilityDelegation = all.capabilityDelegation;
+    }
+    
+    if (all.capabilityInvocation) {
+      doc.capabilityInvocation = all.capabilityInvocation;
+    }
+  }
+  
+  // Add direct properties from options
+  if (options.authentication) {
+    doc.authentication = options.authentication;
+  }
+  
+  if (options.assertionMethod) {
+    doc.assertionMethod = options.assertionMethod;
+  }
+  
+  if (options.keyAgreement) {
+    doc.keyAgreement = options.keyAgreement;
+  }
+  
+  if (options.alsoKnownAs) {
+    doc.alsoKnownAs = options.alsoKnownAs;
+  }
+  
+  return {doc};
 }
 
+// Helper function to generate a random string (replacement for nanoid)
+export const generateRandomId = (length: number = 8): string => {
+  const characters = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  const charactersLength = characters.length;
+  for (let i = 0; i < length; i++) {
+    result += characters.charAt(Math.floor(Math.random() * charactersLength));
+  }
+  return result;
+};
+
 export const createVMID = (vm: VerificationMethod, did: string | null) => {
-  return `${did ?? ''}#${vm.publicKeyMultibase?.slice(-8) || nanoid(8)}`
+  return `${did ?? ''}#${vm.publicKeyMultibase?.slice(-8) || generateRandomId(8)}`
 }
 
 export const normalizeVMs = (verificationMethod: VerificationMethod[] | undefined, did: string | null = null) => {
-  if (!verificationMethod) {
-    return {};
+  const all: any = {
+    verificationMethod: [],
+    authentication: [],
+    assertionMethod: [],
+    keyAgreement: [],
+    capabilityDelegation: [],
+    capabilityInvocation: []
+  };
+  
+  if (!verificationMethod || verificationMethod.length === 0) {
+    return all;
   }
-  const all: any = {};
-  const authentication = verificationMethod
-    ?.filter(vm => vm.purpose === 'authentication').map(vm => createVMID(vm, did))
-  if (authentication && authentication?.length > 0) {
-    all.authentication = authentication;
-  }
-  const assertionMethod = verificationMethod
-    ?.filter(vm => vm.purpose === 'assertionMethod').map(vm => createVMID(vm, did))
-  if (assertionMethod && assertionMethod?.length > 0) {
-    all.assertionMethod = assertionMethod;
-  }
-  const keyAgreement = verificationMethod
-    ?.filter(vm => vm.purpose === 'keyAgreement').map(vm => createVMID(vm, did));
-  if (keyAgreement && keyAgreement?.length > 0) {
-    all.keyAgreement = keyAgreement;
-  }
-  const capabilityDelegation = verificationMethod
-    ?.filter(vm => vm.purpose === 'capabilityDelegation').map(vm => createVMID(vm, did));
-  if (capabilityDelegation && capabilityDelegation?.length > 0) {
-    all.capabilityDelegation = capabilityDelegation;
-  }
-  const capabilityInvocation = verificationMethod
-  ?.filter(vm => vm.purpose === 'capabilityInvocation').map(vm => createVMID(vm, did));
-  if (capabilityInvocation && capabilityInvocation?.length > 0) {
-    all.capabilityInvocation = capabilityInvocation;
-  }
-  if(verificationMethod && verificationMethod.length > 0) {
-    all.verificationMethod = verificationMethod?.map(vm => ({
-      id: createVMID(vm, did),
-      ...(did ? {controller: vm.controller ?? did} : {}),
-      type: 'Multikey',
-      publicKeyMultibase: vm.publicKeyMultibase
-    }))
-  }
-  return {all};
-}
+  
+  // First collect all VMs
+  const vms = verificationMethod.map(vm => ({
+    ...vm,
+    id: createVMID(vm, did)
+  }));
+  all.verificationMethod = vms;
+
+  // Then handle relationships - default to authentication if no purpose is specified
+  all.authentication = verificationMethod
+    .filter(vm => !vm.purpose || vm.purpose === 'authentication')
+    .map(vm => createVMID(vm, did));
+
+  all.assertionMethod = verificationMethod
+    .filter(vm => vm.purpose === 'assertionMethod')
+    .map(vm => createVMID(vm, did));
+
+  all.keyAgreement = verificationMethod
+    .filter(vm => vm.purpose === 'keyAgreement')
+    .map(vm => createVMID(vm, did));
+
+  all.capabilityDelegation = verificationMethod
+    .filter(vm => vm.purpose === 'capabilityDelegation')
+    .map(vm => createVMID(vm, did));
+
+  all.capabilityInvocation = verificationMethod
+    .filter(vm => vm.purpose === 'capabilityInvocation')
+    .map(vm => createVMID(vm, did));
+
+  return all;
+};
 
 export const resolveVM = async (vm: string) => {
   try {

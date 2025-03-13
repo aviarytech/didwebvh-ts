@@ -1,19 +1,28 @@
-import * as ed from '@noble/ed25519';
-import { base58btc } from "multiformats/bases/base58";
 import { createSCID, deriveNextKeyHash, resolveVM } from "./utils";
 import { canonicalize } from 'json-canonicalize';
 import { createHash } from './utils/crypto';
 import { config } from './config';
-import { bufferToString, concatBuffers } from './utils/buffer';
-import { WitnessParameter } from './interfaces';
+import { concatBuffers } from './utils/buffer';
+import { WitnessParameter, Verifier } from './interfaces';
 import { validateWitnessParameter } from './witness';
+import { multibaseDecode } from "./utils/multiformats";
 
 const isKeyAuthorized = (verificationMethod: string, updateKeys: string[]): boolean => {
   if (config.getEnvValue('IGNORE_ASSERTION_KEY_IS_AUTHORIZED') === 'true') return true;
 
   if (verificationMethod.startsWith('did:key:')) {
-    const key = verificationMethod.split('did:key:')[1].split('#')[0];
-    const authorized = updateKeys.includes(key);
+    const keyParts = verificationMethod.split('did:key:')[1].split('#');
+    const key = keyParts[0];
+    
+    const authorized = updateKeys.some(updateKey => {
+      let updateKeyPart = updateKey;
+      if (updateKey.startsWith('did:key:')) {
+        updateKeyPart = updateKey.split('did:key:')[1].split('#')[0];
+      }
+      
+      return updateKeyPart === key;
+    });
+    
     return authorized;
   }
   return false;
@@ -33,9 +42,14 @@ export const documentStateIsValid = async (
   doc: any, 
   updateKeys: string[], 
   witness: WitnessParameter | undefined | null,
-  skipWitnessVerification?: boolean
+  skipWitnessVerification?: boolean,
+  verifier?: Verifier
 ) => {
   if (config.getEnvValue('IGNORE_ASSERTION_DOCUMENT_STATE_IS_VALID') === 'true') return true;
+  
+  if (!verifier) {
+    throw new Error('Verifier implementation is required');
+  }
   
   let {proof: proofs, ...rest} = doc;
   if (!Array.isArray(proofs)) {
@@ -78,25 +92,21 @@ export const documentStateIsValid = async (
       throw new Error(`Verification Method ${proof.verificationMethod} not found`);
     }
 
-    const publicKey = base58btc.decode(vm.publicKeyMultibase!);
+    const publicKey = multibaseDecode(vm.publicKeyMultibase).bytes;
     if (publicKey[0] !== 0xed || publicKey[1] !== 0x01) {
       throw new Error(`multiKey doesn't include ed25519 header (0xed01)`);
     }
 
     const {proofValue, ...restProof} = proof;
-    const signature = base58btc.decode(proofValue);
+    const signature = multibaseDecode(proofValue).bytes;
     const dataHash = await createHash(canonicalize(rest));
     const proofHash = await createHash(canonicalize(restProof));
     const input = concatBuffers(proofHash, dataHash);
 
-    const signatureHex = bufferToString(signature, 'hex');
-    const inputHex = bufferToString(input, 'hex');
-    const publicKeyHex = bufferToString(publicKey.slice(2), 'hex');
-
-    const verified = await ed.verifyAsync(
-      signatureHex,
-      inputHex,
-      publicKeyHex
+    const verified = await verifier.verify(
+      signature,
+      input,
+      publicKey.slice(2)
     );
     
     if (!verified) {
