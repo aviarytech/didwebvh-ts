@@ -7,4 +7,28 @@ GET http://localhost:3010/resolve/did:webvh:QmPEQVM1JPTyrvEgBcDXwjK4TeyLGSX1Pxjg
 ### Health check express resolver
 GET http://localhost:8000/health
 ### Resolve the DID with express resolver
-GET http://localhost:8000/resolve/did:webvh:QmPEQVM1JPTyrvEgBcDXwjK4TeyLGSX1PxjgyeAisdWM1p:gist.githubusercontent.com:brianorwhatever:9c4633d18eb644f7a47f93a802691626:raw 
+GET http://localhost:3010/resolve/did:webvh:QmPEQVM1JPTyrvEgBcDXwjK4TeyLGSX1PxjgyeAisdWM1p:gist.githubusercontent.com:brianorwhatever:9c4633d18eb644f7a47f93a802691626:raw
+
+### Issuer (Query Parameter):
+GET http://localhost:3010/resolve?id=did%3Awebvh%3AQmRxso8yoATm66gKhp3AKbPSH6ys4XcNVgKT786M99JRpN%3Aid.anoncreds.vc%3Ademo%3A863862bf-cd3b-44e3-89d4-0a2d7f5cc8d4
+
+### Issuer (Path Parameter):
+GET http://localhost:3010/resolve/did%3Awebvh%3AQmRxso8yoATm66gKhp3AKbPSH6ys4XcNVgKT786M99JRpN%3Aid.anoncreds.vc%3Ademo%3A863862bf-cd3b-44e3-89d4-0a2d7f5cc8d4
+
+### Schema (Query Parameter):
+GET http://localhost:3010/resolve?id=did%3Awebvh%3AQmRxso8yoATm66gKhp3AKbPSH6ys4XcNVgKT786M99JRpN%3Aid.anoncreds.vc%3Ademo%3A863862bf-cd3b-44e3-89d4-0a2d7f5cc8d4%2Fresources%2FzQmc3ZT6N3s3UhqTcC5kWcWVoHwnkK6dZVBVfkLtYKY8YJm
+
+### Schema (Path Parameter):
+GET http://localhost:3010/resolve/did%3Awebvh%3AQmRxso8yoATm66gKhp3AKbPSH6ys4XcNVgKT786M99JRpN%3Aid.anoncreds.vc%3Ademo%3A863862bf-cd3b-44e3-89d4-0a2d7f5cc8d4/resources/zQmc3ZT6N3s3UhqTcC5kWcWVoHwnkK6dZVBVfkLtYKY8YJm
+
+### Credential Definition (Query Parameter):
+GET http://localhost:3010/resolve?id=did%3Awebvh%3AQmRxso8yoATm66gKhp3AKbPSH6ys4XcNVgKT786M99JRpN%3Aid.anoncreds.vc%3Ademo%3A863862bf-cd3b-44e3-89d4-0a2d7f5cc8d4%2Fresources%2FzQmVrh8pxBhaieoJZG8syFUm3axcC928JrE1gaWo9EBVWMM
+
+### Credential Definition (Path Parameter):
+GET http://localhost:3010/resolve/did%3Awebvh%3AQmRxso8yoATm66gKhp3AKbPSH6ys4XcNVgKT786M99JRpN%3Aid.anoncreds.vc%3Ademo%3A863862bf-cd3b-44e3-89d4-0a2d7f5cc8d4/resources/zQmVrh8pxBhaieoJZG8syFUm3axcC928JrE1gaWo9EBVWMM
+
+### Revocation Registry (Query Parameter):
+GET http://localhost:3010/resolve?id=did%3Awebvh%3AQmRxso8yoATm66gKhp3AKbPSH6ys4XcNVgKT786M99JRpN%3Aid.anoncreds.vc%3Ademo%3A863862bf-cd3b-44e3-89d4-0a2d7f5cc8d4%2Fresources%2FzQmWnvUkdcwB3nHhAWyAdQ4Vh3WZwtoatK7rhLTVpABGMqt
+
+### Revocation Registry (Path Parameter):
+GET http://localhost:3010/resolve/did%3Awebvh%3AQmRxso8yoATm66gKhp3AKbPSH6ys4XcNVgKT786M99JRpN%3Aid.anoncreds.vc%3Ademo%3A863862bf-cd3b-44e3-89d4-0a2d7f5cc8d4/resources/zQmWnvUkdcwB3nHhAWyAdQ4Vh3WZwtoatK7rhLTVpABGMqt

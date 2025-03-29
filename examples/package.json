@@ -3,6 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "scripts": {
+    "start:express": "bun run --watch express-resolver.ts",
+    "start:elysia": "bun run --watch elysia-resolver.ts"
+  },
   "dependencies": {
     "didwebvh-ts": "file:..",
     "elysia": "^1.2.25",

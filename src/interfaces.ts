@@ -162,4 +162,16 @@ export interface ResolutionOptions {
 export interface WitnessProofFileEntry {
   versionId: string;
   proof: DataIntegrityProof[];
+}
+
+export interface ResourceResolutionOptions {
+  path: string;
+  file: string;
+  isRemote?: boolean;
+  didDocument?: DIDDoc;
+}
+
+export interface ResourceResolutionResult {
+  content: string;
+  contentType?: string;
 } 
