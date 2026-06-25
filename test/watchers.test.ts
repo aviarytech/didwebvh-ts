@@ -24,7 +24,7 @@ describe('Watcher Handling', () => {
     });
 
     const resolved = await resolveDIDFromLog(log, { verifier });
-    expect(resolved.meta.watchers).toEqual(watchers);
+    expect(resolved.didDocumentMetadata.watchers).toEqual(watchers);
   });
 
   test('Watchers persist across updates when not specified', async () => {
@@ -51,7 +51,7 @@ describe('Watcher Handling', () => {
     });
 
     const resolved = await resolveDIDFromLog(updated.log, { verifier });
-    expect(resolved.meta.watchers).toEqual(watchers);
+    expect(resolved.didDocumentMetadata.watchers).toEqual(watchers);
   });
 
   test('Disable watchers with null', async () => {
@@ -80,7 +80,7 @@ describe('Watcher Handling', () => {
 
     const resolved = await resolveDIDFromLog(updated.log, { verifier });
     expect(updated.log[1].parameters.watchers).toEqual([]);
-    expect(Array.isArray(resolved.meta.watchers)).toBe(true);
-    expect(resolved.meta.watchers).toEqual([]);
+    expect(Array.isArray(resolved.didDocumentMetadata.watchers)).toBe(true);
+    expect(resolved.didDocumentMetadata.watchers).toEqual([]);
   });
 });
