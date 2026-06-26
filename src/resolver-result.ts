@@ -153,7 +153,7 @@ export function toResolutionResult(
     // fails witness verification); dropping it would hide a legitimate result.
     return {
       didResolutionMetadata,
-      didDocument: (core.doc as unknown as DIDResolutionResult['didDocument']) ?? null,
+      didDocument: (core.doc as DIDResolutionResult['didDocument']) ?? null,
       didDocumentMetadata,
     };
   }
@@ -164,7 +164,7 @@ export function toResolutionResult(
   }
   return {
     didResolutionMetadata,
-    didDocument: (core.doc as unknown as DIDResolutionResult['didDocument']) ?? null,
+    didDocument: (core.doc as DIDResolutionResult['didDocument']) ?? null,
     didDocumentMetadata,
   };
 }
