@@ -24,15 +24,26 @@ export function getResolver(config: GetResolverConfig = {}): ResolverRegistry {
   ): Promise<DIDResolutionResult> => {
     // did:webvh selectors arrive as DID-URL query parameters (`?versionId=`),
     // which did-resolver exposes as the raw, undecoded `parsed.query` string.
-    // Matrix-style DID parameters (`;key=value`) land in `parsed.params`; accept
-    // those too, with query parameters taking precedence.
+    // Matrix-style DID params (`;key=value`) are not supported in the DID specification.
     //
     // Decode per RFC 3986 (decodeURIComponent), NOT via URLSearchParams: a DID
     // URL query is a URI component where `+` is a literal plus, whereas
     // URLSearchParams applies application/x-www-form-urlencoded rules and would
     // turn `+` into a space — corrupting e.g. a `versionTime` with a `+HH:MM`
     // timezone offset.
-    const params: Record<string, string | undefined> = { ...(parsed.params ?? {}) };
+    const matrixParams = parsed.params ?? {};
+    if (
+      matrixParams.versionId !== undefined ||
+      matrixParams.versionNumber !== undefined ||
+      matrixParams.versionTime !== undefined
+    ) {
+      return toErrorResult(
+        'invalidDidUrl',
+        'version selectors must be supplied as query parameters (?versionId, ?versionNumber, ?versionTime).'
+      );
+    }
+
+    const params: Record<string, string | undefined> = {};
     for (const pair of (parsed.query ?? '').split('&')) {
       if (!pair) continue;
       const eq = pair.indexOf('=');
@@ -45,6 +56,13 @@ export function getResolver(config: GetResolverConfig = {}): ResolverRegistry {
         params[rawKey] = rawValue;
       }
     }
+
+    const allowedSelectorKeys = new Set(['versionId', 'versionNumber', 'versionTime']);
+    const unknownSelectorKey = Object.keys(params).find((key) => !allowedSelectorKeys.has(key));
+    if (unknownSelectorKey !== undefined) {
+      return toErrorResult('invalidDidUrl', `Unsupported query parameter: ${unknownSelectorKey}`);
+    }
+
     const selector: { versionId?: string; versionTime?: Date; versionNumber?: number; verifier: Verifier } = {
       verifier,
     };

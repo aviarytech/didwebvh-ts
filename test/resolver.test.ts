@@ -128,6 +128,13 @@ describe('getResolver integration', () => {
     expect(result.didDocument).toBeNull();
   });
 
+  test('unknown query parameter returns invalidDidUrl', async () => {
+    serveLog(fullLog);
+    const result = await resolver.resolve(`${did}?foo=bar`);
+    expect(result.didResolutionMetadata.error).toBe('invalidDidUrl');
+    expect(result.didDocument).toBeNull();
+  });
+
   test('not-found DID returns notFound', async () => {
     serve404();
     const result = await resolver.resolve(did);
