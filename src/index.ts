@@ -7,7 +7,6 @@ export type { WebvhDocumentMetadata, WebvhErrorCode, WebvhResolutionMetadata } f
 export { InvalidDidUrlError } from './resolver-result';
 export { deriveNextKeyHash, generateParallelDidWeb, parseDidKeyDid, parseDidKeyVerificationMethod } from './utils';
 export { MultibaseEncoding, multibaseDecode, multibaseEncode } from './utils/multiformats';
-export { defaultVerifier } from './verifier';
 export {
   createWitnessProof,
   signWitnessProofEntries,
