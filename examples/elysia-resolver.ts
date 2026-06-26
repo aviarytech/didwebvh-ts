@@ -48,6 +48,7 @@ const WELL_KNOWN_ALLOW_LIST = ['did.jsonl'];
 const getStatusCodeFromError = (errorType?: string): number => {
   switch (errorType) {
     case 'invalidDid':
+      return 400;
     case 'invalidDidUrl':
       return 400;
     case 'notFound':
