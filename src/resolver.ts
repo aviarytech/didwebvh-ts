@@ -1,7 +1,7 @@
 import type { DIDResolutionResult, DIDResolver, ParsedDID, Resolvable, ResolverRegistry } from 'did-resolver';
 import type { Verifier } from './interfaces';
 import { resolveDID } from './method';
-import { assertSingleVersionSelector, InvalidDidUrlError, toErrorResult } from './resolver-result';
+import { toErrorResult, validateSingleVersionSelector } from './resolver-result';
 import { defaultVerifier } from './verifier';
 
 export interface GetResolverConfig {
@@ -38,7 +38,7 @@ export function getResolver(config: GetResolverConfig = {}): ResolverRegistry {
       matrixParams.versionTime !== undefined
     ) {
       return toErrorResult(
-        'invalidDidUrl',
+        'invalidOptions',
         'version selectors must be supplied as query parameters (?versionId, ?versionNumber, ?versionTime).'
       );
     }
@@ -52,15 +52,14 @@ export function getResolver(config: GetResolverConfig = {}): ResolverRegistry {
       try {
         params[decodeURIComponent(rawKey)] = decodeURIComponent(rawValue);
       } catch {
-        // Leave malformed percent-encoding untouched rather than throwing.
-        params[rawKey] = rawValue;
+        return toErrorResult('invalidDidUrl', 'Malformed percent-encoding in DID URL query.');
       }
     }
 
     const allowedSelectorKeys = new Set(['versionId', 'versionNumber', 'versionTime']);
     const unknownSelectorKey = Object.keys(params).find((key) => !allowedSelectorKeys.has(key));
     if (unknownSelectorKey !== undefined) {
-      return toErrorResult('invalidDidUrl', `Unsupported query parameter: ${unknownSelectorKey}`);
+      return toErrorResult('invalidOptions', `Unsupported query parameter: ${unknownSelectorKey}`);
     }
 
     const selector: { versionId?: string; versionTime?: Date; versionNumber?: number; verifier: Verifier } = {
@@ -72,25 +71,21 @@ export function getResolver(config: GetResolverConfig = {}): ResolverRegistry {
     if (params.versionNumber !== undefined) {
       const versionNumber = Number(params.versionNumber);
       if (!Number.isInteger(versionNumber) || versionNumber < 1) {
-        return toErrorResult('invalidDidUrl', `Invalid versionNumber: ${params.versionNumber}`);
+        return toErrorResult('invalidOptions', `Invalid versionNumber: ${params.versionNumber}`);
       }
       selector.versionNumber = versionNumber;
     }
     if (params.versionTime !== undefined) {
       const versionTime = new Date(params.versionTime);
       if (Number.isNaN(versionTime.getTime())) {
-        return toErrorResult('invalidDidUrl', `Invalid versionTime: ${params.versionTime}`);
+        return toErrorResult('invalidOptions', `Invalid versionTime: ${params.versionTime}`);
       }
       selector.versionTime = versionTime;
     }
 
-    try {
-      assertSingleVersionSelector(selector);
-    } catch (e) {
-      if (e instanceof InvalidDidUrlError) {
-        return toErrorResult('invalidDidUrl', e.message);
-      }
-      throw e;
+    const selectorError = validateSingleVersionSelector(selector);
+    if (selectorError) {
+      return toErrorResult(selectorError.code, selectorError.detail);
     }
 
     // parsed.did is the bare DID without query/fragment.
