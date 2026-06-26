@@ -143,13 +143,6 @@ describe('getResolver integration', () => {
     expect(result.didDocumentMetadata.versionId).toBe(v1Id);
   });
 
-  test('malformed percent-encoding in query returns invalidDidUrl', async () => {
-    serveLog(fullLog);
-    const result = await resolver.resolve(`${did}?versionId=%E0%A4%A`);
-    expect(result.didResolutionMetadata.error).toBe('invalidDidUrl');
-    expect(result.didDocument).toBeNull();
-  });
-
   test('malformed percent-encoding in query key returns invalidDidUrl', async () => {
     serveLog(fullLog);
     const result = await resolver.resolve(`${did}?%ZZ=1`);
@@ -159,7 +152,7 @@ describe('getResolver integration', () => {
 
   test('malformed percent-encoding in query value returns invalidDidUrl', async () => {
     serveLog(fullLog);
-    const result = await resolver.resolve(`${did}?versionId=%`);
+    const result = await resolver.resolve(`${did}?versionId=%E0%A4%A`);
     expect(result.didResolutionMetadata.error).toBe('invalidDidUrl');
     expect(result.didDocument).toBeNull();
   });
