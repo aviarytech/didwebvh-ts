@@ -176,7 +176,7 @@ const result = await resolver.resolve('did:webvh:SCID:example.com');
 const v2 = await resolver.resolve('did:webvh:SCID:example.com?versionId=2-...');
 ```
 
-`versionId`, `versionTime`, and `versionNumber` are mutually exclusive — supplying more than one returns `didResolutionMetadata.error = "invalidDidUrl"`.
+`versionId`, `versionTime`, and `versionNumber` are mutually exclusive — supplying more than one returns `didResolutionMetadata.error = "invalidDid"`.
 
 #### Calling the resolvers directly
 
@@ -198,7 +198,7 @@ For complete examples, see the [examples](./examples/) directory.
 
 Resolver failures are surfaced on `didResolutionMetadata`:
 
-- `didResolutionMetadata.error` is one of `"invalidDid"`, `"notFound"`, or `"invalidDidUrl"`.
+- `didResolutionMetadata.error` is one of `"invalidDid"`, `"notFound"`, or `"internalError"`.
 - `didResolutionMetadata.problemDetails` carries RFC9457-style fields (`type`, `title`, `detail`) where available, and `didResolutionMetadata.message` carries the underlying detail string.
 - Whether the resolved DID is locally controlled rides along as `didResolutionMetadata.controlled` (a non-standard extension).
 
