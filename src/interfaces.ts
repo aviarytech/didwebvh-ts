@@ -52,22 +52,7 @@ export interface ProblemDetails {
   detail: string;
 }
 
-export enum DidResolutionError {
-  NotFound = 'notFound',
-  InvalidDid = 'invalidDid',
-  LegacyNotFound = 'NOT_FOUND',
-  LegacyInvalidDid = 'INVALID_DID',
-  InvalidDidUrl = 'INVALID_DID_URL',
-  InvalidOptions = 'INVALID_OPTIONS',
-  RepresentationNotSupported = 'REPRESENTATION_NOT_SUPPORTED',
-  MethodNotSupported = 'METHOD_NOT_SUPPORTED',
-  UnsupportedPublicKeyType = 'UNSUPPORTED_PUBLIC_KEY_TYPE',
-  LegacyInvalidDidDocument = 'INVALID_DID_DOCUMENT',
-  InvalidPublicKey = 'INVALID_PUBLIC_KEY',
-  InvalidPublicKeyLength = 'INVALID_PUBLIC_KEY_LENGTH',
-  InvalidPublicKeyType = 'INVALID_PUBLIC_KEY_TYPE',
-  InternalError = 'INTERNAL_ERROR',
-}
+export type DidResolutionError = 'invalidDid' | 'notFound' | 'invalidOptions' | 'invalidDidUrl' | 'internalError';
 
 export interface DIDResolutionMeta {
   versionId: string;

@@ -12,7 +12,7 @@ import type {
 } from './interfaces';
 import * as v0_5 from './method_versions/method.v0.5';
 import * as v1 from './method_versions/method.v1.0';
-import { assertSingleVersionSelector, mapErrorToCode, toErrorResult, toResolutionResult } from './resolver-result';
+import { mapErrorToCode, toErrorResult, toResolutionResult, validateSingleVersionSelector } from './resolver-result';
 import { fetchLogFromIdentifier, getActiveDIDs, maybeWriteTestLog } from './utils';
 import { defaultVerifier } from './verifier';
 
@@ -73,7 +73,10 @@ export const resolveDID = async (
   const didParts = did.split(':');
   const scid = didParts.length > 2 && didParts[0] === 'did' && didParts[1] === 'webvh' ? didParts[2] : undefined;
   try {
-    assertSingleVersionSelector(options);
+    const selectorError = validateSingleVersionSelector(options);
+    if (selectorError) {
+      return toErrorResult(selectorError.code, selectorError.detail, { controlled });
+    }
     const log = await fetchLogFromIdentifier(did, controlled);
     const version = getWebvhVersionFromLog(log);
     const optsWithScid = { ...options, verifier, scid, requestedDid: did };
@@ -103,7 +106,10 @@ export const resolveDIDFromLog = async (
 ): Promise<DIDResolutionResult> => {
   const verifier = options.verifier ?? defaultVerifier;
   try {
-    assertSingleVersionSelector(options);
+    const selectorError = validateSingleVersionSelector(options);
+    if (selectorError) {
+      return toErrorResult(selectorError.code, selectorError.detail);
+    }
     const version = getWebvhVersionFromLog(log);
     const result =
       version === '0.5'
