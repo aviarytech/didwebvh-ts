@@ -31,17 +31,17 @@ describe('validateSingleVersionSelector', () => {
     expect(validateSingleVersionSelector({ versionTime: new Date() })).toBeNull();
   });
   test('rejects versionId + versionNumber', () => {
-    expect(validateSingleVersionSelector({ versionId: '2-x', versionNumber: 2 })?.code).toBe('invalidOptions');
+    expect(validateSingleVersionSelector({ versionId: '2-x', versionNumber: 2 })?.code).toBe('invalidDid');
   });
   test('rejects versionId + versionTime', () => {
-    expect(validateSingleVersionSelector({ versionId: '2-x', versionTime: new Date() })?.code).toBe('invalidOptions');
+    expect(validateSingleVersionSelector({ versionId: '2-x', versionTime: new Date() })?.code).toBe('invalidDid');
   });
   test('rejects versionNumber + versionTime', () => {
-    expect(validateSingleVersionSelector({ versionNumber: 2, versionTime: new Date() })?.code).toBe('invalidOptions');
+    expect(validateSingleVersionSelector({ versionNumber: 2, versionTime: new Date() })?.code).toBe('invalidDid');
   });
   test('rejects all three', () => {
     expect(validateSingleVersionSelector({ versionId: '2-x', versionNumber: 2, versionTime: new Date() })?.code).toBe(
-      'invalidOptions'
+      'invalidDid'
     );
   });
 });
@@ -129,16 +129,16 @@ describe('toResolutionResult', () => {
 
 describe('toErrorResult', () => {
   test('builds an error result with code, detail, and synthesized problemDetails', () => {
-    const result = toErrorResult('invalidOptions', 'two selectors supplied', { controlled: false });
+    const result = toErrorResult('invalidDid', 'two selectors supplied', { controlled: false });
     expect(result.didDocument).toBeNull();
-    expect(result.didResolutionMetadata.error).toBe('invalidOptions');
+    expect(result.didResolutionMetadata.error).toBe('invalidDid');
     expect((result.didResolutionMetadata as { controlled?: boolean }).controlled).toBe(false);
     expect(result.didResolutionMetadata.message).toBe('two selectors supplied');
     const problemDetails = (
       result.didResolutionMetadata as { problemDetails?: { type: string; title: string; detail: string } }
     ).problemDetails;
     expect(problemDetails?.detail).toBe('two selectors supplied');
-    expect(problemDetails?.type).toContain('INVALID_OPTIONS');
+    expect(problemDetails?.type).toContain('INVALID_CONTROLLED_IDENTIFIER_DOCUMENT_ID');
     expect(problemDetails?.title.length).toBeGreaterThan(0);
     expect(result.didDocumentMetadata).toEqual({});
   });

@@ -50,10 +50,6 @@ const getStatusCodeFromError = (errorType?: string): number => {
       return 404;
     case 'invalidDid':
       return 400;
-    case 'invalidDidUrl':
-      return 400;
-    case 'representationNotSupported':
-      return 406;
     default:
       return 500;
   }

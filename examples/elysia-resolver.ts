@@ -49,12 +49,8 @@ const getStatusCodeFromError = (errorType?: string): number => {
   switch (errorType) {
     case 'invalidDid':
       return 400;
-    case 'invalidDidUrl':
-      return 400;
     case 'notFound':
       return 404;
-    case 'representationNotSupported':
-      return 406;
     default:
       return 500;
   }

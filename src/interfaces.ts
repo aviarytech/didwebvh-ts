@@ -52,7 +52,7 @@ export interface ProblemDetails {
   detail: string;
 }
 
-export type DidResolutionError = 'invalidDid' | 'notFound' | 'invalidOptions' | 'invalidDidUrl' | 'internalError';
+export type DidResolutionError = 'invalidDid' | 'notFound' | 'internalError';
 
 export interface DIDResolutionMeta {
   versionId: string;

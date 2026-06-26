@@ -107,31 +107,31 @@ describe('getResolver integration', () => {
     expect(result.didDocumentMetadata.versionId).toBe(v1Id);
   });
 
-  test('combining selectors returns invalidOptions', async () => {
+  test('combining selectors returns invalidDid', async () => {
     serveLog(fullLog);
     const result = await resolver.resolve(`${did}?versionNumber=1&versionId=${v1Id}`);
-    expect(result.didResolutionMetadata.error).toBe('invalidOptions');
+    expect(result.didResolutionMetadata.error).toBe('invalidDid');
     expect(result.didDocument).toBeNull();
   });
 
-  test('non-numeric versionNumber returns invalidOptions', async () => {
+  test('non-numeric versionNumber returns invalidDid', async () => {
     serveLog(fullLog);
     const result = await resolver.resolve(`${did}?versionNumber=abc`);
-    expect(result.didResolutionMetadata.error).toBe('invalidOptions');
+    expect(result.didResolutionMetadata.error).toBe('invalidDid');
     expect(result.didDocument).toBeNull();
   });
 
-  test('unparseable versionTime returns invalidOptions', async () => {
+  test('unparseable versionTime returns invalidDid', async () => {
     serveLog(fullLog);
     const result = await resolver.resolve(`${did}?versionTime=not-a-date`);
-    expect(result.didResolutionMetadata.error).toBe('invalidOptions');
+    expect(result.didResolutionMetadata.error).toBe('invalidDid');
     expect(result.didDocument).toBeNull();
   });
 
-  test('unknown query parameter returns invalidOptions', async () => {
+  test('unknown query parameter returns invalidDid', async () => {
     serveLog(fullLog);
     const result = await resolver.resolve(`${did}?foo=bar`);
-    expect(result.didResolutionMetadata.error).toBe('invalidOptions');
+    expect(result.didResolutionMetadata.error).toBe('invalidDid');
     expect(result.didDocument).toBeNull();
   });
 
@@ -143,17 +143,17 @@ describe('getResolver integration', () => {
     expect(result.didDocumentMetadata.versionId).toBe(v1Id);
   });
 
-  test('malformed percent-encoding in query key returns invalidDidUrl', async () => {
+  test('malformed percent-encoding in query key returns invalidDid', async () => {
     serveLog(fullLog);
     const result = await resolver.resolve(`${did}?%ZZ=1`);
-    expect(result.didResolutionMetadata.error).toBe('invalidDidUrl');
+    expect(result.didResolutionMetadata.error).toBe('invalidDid');
     expect(result.didDocument).toBeNull();
   });
 
-  test('malformed percent-encoding in query value returns invalidDidUrl', async () => {
+  test('malformed percent-encoding in query value returns invalidDid', async () => {
     serveLog(fullLog);
     const result = await resolver.resolve(`${did}?versionId=%E0%A4%A`);
-    expect(result.didResolutionMetadata.error).toBe('invalidDidUrl');
+    expect(result.didResolutionMetadata.error).toBe('invalidDid');
     expect(result.didDocument).toBeNull();
   });
 

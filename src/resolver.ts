@@ -38,7 +38,7 @@ export function getResolver(config: GetResolverConfig = {}): ResolverRegistry {
       matrixParams.versionTime !== undefined
     ) {
       return toErrorResult(
-        'invalidOptions',
+        'invalidDid',
         'version selectors must be supplied as query parameters (?versionId, ?versionNumber, ?versionTime).'
       );
     }
@@ -52,14 +52,14 @@ export function getResolver(config: GetResolverConfig = {}): ResolverRegistry {
       try {
         params[decodeURIComponent(rawKey)] = decodeURIComponent(rawValue);
       } catch {
-        return toErrorResult('invalidDidUrl', 'Malformed percent-encoding in DID URL query.');
+        return toErrorResult('invalidDid', 'Malformed percent-encoding in DID URL query.');
       }
     }
 
     const allowedSelectorKeys = new Set(['versionId', 'versionNumber', 'versionTime']);
     const unknownSelectorKey = Object.keys(params).find((key) => !allowedSelectorKeys.has(key));
     if (unknownSelectorKey !== undefined) {
-      return toErrorResult('invalidOptions', `Unsupported query parameter: ${unknownSelectorKey}`);
+      return toErrorResult('invalidDid', `Unsupported query parameter: ${unknownSelectorKey}`);
     }
 
     const selector: { versionId?: string; versionTime?: Date; versionNumber?: number; verifier: Verifier } = {
@@ -71,14 +71,14 @@ export function getResolver(config: GetResolverConfig = {}): ResolverRegistry {
     if (params.versionNumber !== undefined) {
       const versionNumber = Number(params.versionNumber);
       if (!Number.isInteger(versionNumber) || versionNumber < 1) {
-        return toErrorResult('invalidOptions', `Invalid versionNumber: ${params.versionNumber}`);
+        return toErrorResult('invalidDid', `Invalid versionNumber: ${params.versionNumber}`);
       }
       selector.versionNumber = versionNumber;
     }
     if (params.versionTime !== undefined) {
       const versionTime = new Date(params.versionTime);
       if (Number.isNaN(versionTime.getTime())) {
-        return toErrorResult('invalidOptions', `Invalid versionTime: ${params.versionTime}`);
+        return toErrorResult('invalidDid', `Invalid versionTime: ${params.versionTime}`);
       }
       selector.versionTime = versionTime;
     }

@@ -24,14 +24,14 @@ export function validateSingleVersionSelector(options: {
   versionId?: string;
   versionTime?: Date;
   versionNumber?: number;
-}): { code: 'invalidOptions'; detail: string } | null {
+}): { code: 'invalidDid'; detail: string } | null {
   const count =
     (options.versionId !== undefined ? 1 : 0) +
     (options.versionTime !== undefined ? 1 : 0) +
     (options.versionNumber !== undefined ? 1 : 0);
   if (count > 1) {
     return {
-      code: 'invalidOptions',
+      code: 'invalidDid',
       detail: 'At most one of versionId, versionTime, versionNumber may be supplied; they are mutually exclusive.',
     };
   }
@@ -74,14 +74,6 @@ const PROBLEM_DETAILS_BY_CODE: Record<DidResolutionError, { type: string; title:
   invalidDid: {
     type: 'https://w3id.org/security#INVALID_CONTROLLED_IDENTIFIER_DOCUMENT_ID',
     title: 'The resolved DID is invalid.',
-  },
-  invalidOptions: {
-    type: 'https://www.w3.org/ns/did#INVALID_OPTIONS',
-    title: 'One or more resolution options are invalid.',
-  },
-  invalidDidUrl: {
-    type: 'https://www.w3.org/ns/did#INVALID_DID_URL',
-    title: 'The DID URL is invalid.',
   },
   internalError: {
     type: 'https://www.w3.org/ns/did#INTERNAL_ERROR',
