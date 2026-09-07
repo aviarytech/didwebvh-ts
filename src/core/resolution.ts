@@ -277,7 +277,6 @@ const processResolvedLogEntries = async ({
             entryContext,
             logEntries,
             entryIndex,
-            activeMethod,
             options,
           });
 
@@ -469,14 +468,12 @@ const processSubsequentEntry = async ({
   entryContext,
   logEntries,
   entryIndex,
-  activeMethod,
   options,
 }: {
   resolverContext: ResolverContext;
   entryContext: ParsedResolutionEntryContext;
   logEntries: DIDLog;
   entryIndex: number;
-  activeMethod: string;
   options: InternalResolutionOptions;
 }): Promise<DIDDoc> => {
   const {
@@ -640,12 +637,7 @@ const enforceRequiredWitnessChecks = async ({
       return proofVersionNumber !== undefined && proofVersionNumber >= check.targetVersionNumber;
     });
 
-    const approvals = await countVerifiedWitnessApprovals(
-      logEntries[check.targetVersionNumber - 1],
-      candidateProofs,
-      check.witness,
-      verifier
-    );
+    const approvals = await countVerifiedWitnessApprovals(candidateProofs, check.witness, verifier);
     const threshold = normalizeWitnessThreshold(check.witness.threshold);
 
     if (approvals < threshold) {

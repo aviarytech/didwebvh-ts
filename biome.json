@@ -15,7 +15,7 @@
     "rules": {
       "correctness": {
         "noUnusedVariables": "off",
-        "noUnusedFunctionParameters": "off",
+        "noUnusedFunctionParameters": "on",
         "useImportExtensions": {
           "level": "error",
           "options": {

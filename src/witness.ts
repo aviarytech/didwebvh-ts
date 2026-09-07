@@ -223,7 +223,6 @@ export function countWitnessApprovals(proofs: DataIntegrityProof[], witnesses: W
 }
 
 export async function countVerifiedWitnessApprovals(
-  logEntry: DIDLogEntry,
   witnessProofs: WitnessProofFileEntry[],
   currentWitness: WitnessParameterResolution,
   verifier?: Verifier

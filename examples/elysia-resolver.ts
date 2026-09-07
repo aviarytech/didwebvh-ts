@@ -17,7 +17,7 @@ class ElysiaVerifier extends AbstractCrypto implements Verifier {
     super({ verificationMethod });
   }
 
-  async sign(input: SigningInput): Promise<SigningOutput> {
+  async sign(_input: SigningInput): Promise<SigningOutput> {
     throw new Error('Not implemented');
   }
 
