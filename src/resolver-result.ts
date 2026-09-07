@@ -1,5 +1,5 @@
 import type { DIDDocumentMetadata, DIDResolutionMetadata, DIDResolutionResult } from 'did-resolver';
-import type { DIDDoc, DIDResolutionMeta, DidResolutionError, ProblemDetails } from './interfaces';
+import type { DIDDoc, DIDResolutionMeta, DidResolutionError, ProblemDetails } from './interfaces.js';
 
 /** `problemDetails.type` URIs from the did:webvh resolution-error registry. */
 export const WEBVH_ERROR_TYPES = {

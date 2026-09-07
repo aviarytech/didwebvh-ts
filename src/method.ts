@@ -1,8 +1,8 @@
 import type { DIDResolutionResult } from 'did-resolver';
-import { DEFAULT_TTL_SECONDS, SCID_PLACEHOLDER } from './constants';
-import { prepareDeactivationEntry, prepareGenesisEntry, prepareUpdateEntry } from './core/entries';
-import { resolveLog } from './core/resolution';
-import { generateParallelDidWeb } from './did-document';
+import { DEFAULT_TTL_SECONDS, SCID_PLACEHOLDER } from './constants.js';
+import { prepareDeactivationEntry, prepareGenesisEntry, prepareUpdateEntry } from './core/entries.js';
+import { resolveLog } from './core/resolution.js';
+import { generateParallelDidWeb } from './did-document.js';
 import type {
   CreateDIDInterface,
   CreateDIDResult,
@@ -14,17 +14,17 @@ import type {
   ResolutionOptions,
   UpdateDIDInterface,
   UpdateDIDResult,
-} from './interfaces';
-import { mapErrorToCode, toErrorResult, toResolutionResult, validateSingleVersionSelector } from './resolver-result';
-import { fetchLogFromIdentifier, normalizeDidAddress, parseDidWebvhIdentifier, requireDidDocumentId } from './utils';
+} from './interfaces.js';
+import { mapErrorToCode, toErrorResult, toResolutionResult, validateSingleVersionSelector } from './resolver-result.js';
 import {
   createDate,
   createNextVersionTime,
   MAX_FUTURE_SKEW_MS,
   validateUtcIso8601NotInFuture,
-} from './utils/iso8601-datetime';
-import { defaultVerifier } from './verifier';
-import { resolveWitnessParameter, validateWitnessParameter } from './witness';
+} from './utils/iso8601-datetime.js';
+import { fetchLogFromIdentifier, normalizeDidAddress, parseDidWebvhIdentifier, requireDidDocumentId } from './utils.js';
+import { defaultVerifier } from './verifier.js';
+import { resolveWitnessParameter, validateWitnessParameter } from './witness.js';
 
 const buildMetaFromEntry = (entry: DIDLogEntry): DIDResolutionMeta => {
   const resolvedWitness = resolveWitnessParameter(entry.parameters);

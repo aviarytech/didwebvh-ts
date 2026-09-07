@@ -1,7 +1,7 @@
 /// <reference lib="dom" />
 import { sha256 } from '@noble/hashes/sha2.js';
-import { canonicalizeStrict } from './canonicalize';
-import { createMultihash, encodeBase58Btc, MultihashAlgorithm } from './multiformats';
+import { canonicalizeStrict } from './canonicalize.js';
+import { createMultihash, encodeBase58Btc, MultihashAlgorithm } from './multiformats.js';
 
 const encoder = new TextEncoder();
 

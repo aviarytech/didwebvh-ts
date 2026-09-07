@@ -1,5 +1,5 @@
 import { ed25519 } from '@noble/curves/ed25519.js';
-import type { Verifier } from './interfaces';
+import type { Verifier } from './interfaces.js';
 
 /**
  * Built-in Ed25519 verifier. did:webvh proofs are always `eddsa-jcs-2022`

@@ -5,15 +5,15 @@ import type {
   DIDLog,
   VerificationMethod,
   WitnessProofFileEntry,
-} from '../src/interfaces';
-import { createDID, deactivateDID, resolveDIDFromLog, updateDID } from '../src/method';
-import { createWitnessProof } from '../src/witness';
+} from '../src/interfaces.js';
+import { createDID, deactivateDID, resolveDIDFromLog, updateDID } from '../src/method.js';
+import { createWitnessProof } from '../src/witness.js';
 import {
   asPublicVerificationMethods,
   createTestSigner,
   generateTestVerificationMethod,
   TestCryptoImplementation,
-} from './utils';
+} from './utils.js';
 
 describe('did:webvh normative tests', async () => {
   let newDoc1: CreateDIDResult['doc'];

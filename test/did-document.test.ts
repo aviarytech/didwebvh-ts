@@ -5,16 +5,16 @@ import {
   enrichAlsoKnownAs,
   generateParallelDidWeb,
   validateCreateDidDocument,
-} from '../src/did-document';
-import type { DIDDoc, VerificationMethod } from '../src/interfaces';
-import { createDID, updateDID } from '../src/method';
-import { createVMID, findVerificationMethod, normalizeVMs } from '../src/utils/verification-methods';
+} from '../src/did-document.js';
+import type { DIDDoc, VerificationMethod } from '../src/interfaces.js';
+import { createDID, updateDID } from '../src/method.js';
+import { createVMID, findVerificationMethod, normalizeVMs } from '../src/utils/verification-methods.js';
 import {
   asPublicVerificationMethods,
   createTestSigner,
   createTestVerifier,
   generateTestVerificationMethod,
-} from './utils';
+} from './utils.js';
 
 describe('didDocument create pass-through', () => {
   test('warns and strips secretKeyMultibase when createDID receives secret-bearing verificationMethods', async () => {

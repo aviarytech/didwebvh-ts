@@ -1,12 +1,12 @@
-import { documentStateIsValid, hashChainIsValid, newKeysAreInNextKeys, scidIsFromHash } from '../assertions';
+import { documentStateIsValid, hashChainIsValid, newKeysAreInNextKeys, scidIsFromHash } from '../assertions.js';
 import {
   DEFAULT_TTL_SECONDS,
   METHOD_PARAMETER_KEYS,
   METHOD_PROTOCOL_V0_5,
   METHOD_PROTOCOL_V1_0,
   SCID_PLACEHOLDER,
-} from '../constants';
-import { addDefaultDidWebvhServices } from '../did-document';
+} from '../constants.js';
+import { addDefaultDidWebvhServices } from '../did-document.js';
 import type {
   DIDDoc,
   DIDLog,
@@ -15,17 +15,17 @@ import type {
   ResolutionOptions,
   WitnessParameterResolution,
   WitnessProofFileEntry,
-} from '../interfaces';
-import { buildProblemDetails } from '../resolver-result';
+} from '../interfaces.js';
+import { buildProblemDetails } from '../resolver-result.js';
+import { deriveHash } from '../utils/crypto.js';
+import { MAX_FUTURE_SKEW_MS, parseUtcIso8601VersionTime } from '../utils/iso8601-datetime.js';
 import {
   deepClone,
   parseAndValidateVersionId,
   parseDidWebvhIdentifier,
   replaceValueInObject,
   requireDidDocumentId,
-} from '../utils';
-import { deriveHash } from '../utils/crypto';
-import { MAX_FUTURE_SKEW_MS, parseUtcIso8601VersionTime } from '../utils/iso8601-datetime';
+} from '../utils.js';
 import {
   countVerifiedWitnessApprovals,
   fetchWitnessProofs,
@@ -33,7 +33,7 @@ import {
   normalizeWitnessThreshold,
   resolveWitnessParameter,
   validateWitnessParameter,
-} from '../witness';
+} from '../witness.js';
 
 const hasOwn = <K extends PropertyKey>(obj: object, key: K): obj is Record<K, unknown> => Object.hasOwn(obj, key);
 

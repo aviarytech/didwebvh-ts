@@ -6,8 +6,8 @@ import {
   multibaseDecode,
   multibaseEncode,
   prepareDataForSigning,
-} from 'didwebvh-ts';
-import type { Signer, SigningInput, SigningOutput, VerificationMethod, Verifier } from 'didwebvh-ts/types';
+} from 'didwebvh-ts/index.js';
+import type { Signer, SigningInput, SigningOutput, VerificationMethod, Verifier } from 'didwebvh-ts/types.js';
 import { base58btc } from 'multiformats/bases/base58';
 
 class ExampleCrypto extends AbstractCrypto implements Verifier, Signer {

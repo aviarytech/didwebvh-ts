@@ -1,13 +1,13 @@
 import { afterEach, beforeAll, describe, expect, test, vi } from 'vitest';
-import type { DIDLog, VerificationMethod } from '../src/interfaces';
-import { createDID, resolveDID } from '../src/method';
-import { fetchLogFromIdentifier, fetchWitnessProofs } from '../src/utils';
+import type { DIDLog, VerificationMethod } from '../src/interfaces.js';
+import { createDID, resolveDID } from '../src/method.js';
+import { fetchLogFromIdentifier, fetchWitnessProofs } from '../src/utils.js';
 import {
   asPublicVerificationMethods,
   createTestSigner,
   generateTestVerificationMethod,
   TestCryptoImplementation,
-} from './utils';
+} from './utils.js';
 
 const toJsonl = (log: DIDLog) => log.map((entry) => JSON.stringify(entry)).join('\n');
 

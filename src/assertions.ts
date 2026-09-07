@@ -1,10 +1,10 @@
-import type { DIDLogEntry, Verifier, WitnessParameterResolution } from './interfaces';
-import { concatBuffers } from './utils/buffer';
-import { canonicalizeStrict } from './utils/canonicalize';
-import { createHash, createSCID, deriveNextKeyHash } from './utils/crypto';
-import { decodeBase58Btc, decodeMultihash, MultihashAlgorithm, multibaseDecode } from './utils/multiformats';
-import { parseDidKeyVerificationMethod } from './utils/verification-methods';
-import { validateWitnessParameter } from './witness';
+import type { DIDLogEntry, Verifier, WitnessParameterResolution } from './interfaces.js';
+import { concatBuffers } from './utils/buffer.js';
+import { canonicalizeStrict } from './utils/canonicalize.js';
+import { createHash, createSCID, deriveNextKeyHash } from './utils/crypto.js';
+import { decodeBase58Btc, decodeMultihash, MultihashAlgorithm, multibaseDecode } from './utils/multiformats.js';
+import { parseDidKeyVerificationMethod } from './utils/verification-methods.js';
+import { validateWitnessParameter } from './witness.js';
 
 const isKeyAuthorized = (verificationMethod: string, updateKeys: string[]): boolean => {
   const parsedVerificationMethod = parseDidKeyVerificationMethod(verificationMethod);

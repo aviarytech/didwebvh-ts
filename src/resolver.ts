@@ -1,8 +1,8 @@
 import type { DIDResolutionResult, DIDResolver, ParsedDID, Resolvable, ResolverRegistry } from 'did-resolver';
-import type { Verifier } from './interfaces';
-import { resolveDID } from './method';
-import { toErrorResult, validateSingleVersionSelector, WEBVH_ERROR_TYPES } from './resolver-result';
-import { defaultVerifier } from './verifier';
+import type { Verifier } from './interfaces.js';
+import { resolveDID } from './method.js';
+import { toErrorResult, validateSingleVersionSelector, WEBVH_ERROR_TYPES } from './resolver-result.js';
+import { defaultVerifier } from './verifier.js';
 
 export interface GetResolverConfig {
   verifier?: Verifier;

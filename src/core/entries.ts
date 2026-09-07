@@ -1,12 +1,12 @@
-import { documentStateIsValid, newKeysAreInNextKeys } from '../assertions';
-import { METHOD_PROTOCOL_V1_0, SCID_PLACEHOLDER } from '../constants';
-import { createDataIntegrityProofTemplate, signDataIntegrityProof } from '../cryptography';
+import { documentStateIsValid, newKeysAreInNextKeys } from '../assertions.js';
+import { METHOD_PROTOCOL_V1_0, SCID_PLACEHOLDER } from '../constants.js';
+import { createDataIntegrityProofTemplate, signDataIntegrityProof } from '../cryptography.js';
 import {
   createDIDDoc,
   enrichAlsoKnownAs,
   replaceCreateDidPlaceholders,
   validateCreateDidDocument,
-} from '../did-document';
+} from '../did-document.js';
 import type {
   CreateDIDInterface,
   DeactivateDIDInterface,
@@ -16,11 +16,11 @@ import type {
   DIDResolutionMeta,
   UpdateDIDInterface,
   WitnessParameterResolution,
-} from '../interfaces';
-import { deepClone, normalizeDidAddress, parseDidWebvhIdentifier } from '../utils';
-import { createSCID, deriveHash } from '../utils/crypto';
-import { sanitizeVerificationMethods } from '../utils/verification-methods';
-import { validateWitnessParameter } from '../witness';
+} from '../interfaces.js';
+import { createSCID, deriveHash } from '../utils/crypto.js';
+import { sanitizeVerificationMethods } from '../utils/verification-methods.js';
+import { deepClone, normalizeDidAddress, parseDidWebvhIdentifier } from '../utils.js';
+import { validateWitnessParameter } from '../witness.js';
 
 export interface PreparedEntry {
   entry: DIDLogEntry;
