@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { ed25519 } from '@noble/curves/ed25519.js';
-import { resolveDID } from 'didwebvh-ts/index.js';
-import type { DIDDoc, SigningInput, SigningOutput, Verifier } from 'didwebvh-ts/types.js';
+import { resolveDID } from 'didwebvh-ts';
+import type { DIDDoc, SigningInput, SigningOutput, Verifier } from 'didwebvh-ts/types';
 import express from 'express';
 
 class ExpressVerifier implements Verifier {
