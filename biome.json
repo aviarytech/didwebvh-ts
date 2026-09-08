@@ -45,6 +45,9 @@
       "includes": ["examples/**", "scripts/**"],
       "linter": {
         "rules": {
+          "correctness": {
+            "useImportExtensions": "off"
+          },
           "complexity": {
             "noUselessSwitchCase": "off"
           },
