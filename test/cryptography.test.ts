@@ -1,11 +1,11 @@
 import { beforeAll, describe, expect, test, vi } from 'vitest';
-import { documentStateIsValid, hashChainIsValid, newKeysAreInNextKeys, scidIsFromHash } from '../src/assertions';
+import { documentStateIsValid, hashChainIsValid, newKeysAreInNextKeys, scidIsFromHash } from '../src/assertions.js';
 import {
   AbstractCrypto,
   createDataIntegrityProofTemplate,
   createDocumentSigner,
   signDataIntegrityProof,
-} from '../src/cryptography';
+} from '../src/cryptography.js';
 import type {
   DataIntegrityProofTemplate,
   DIDLogEntry,
@@ -13,17 +13,17 @@ import type {
   SigningInput,
   SigningOutput,
   Verifier,
-} from '../src/interfaces';
-import { createHash, createHashHex, createSCID, deriveHash, deriveNextKeyHash } from '../src/utils/crypto';
+} from '../src/interfaces.js';
+import { createHash, createHashHex, createSCID, deriveHash, deriveNextKeyHash } from '../src/utils/crypto.js';
 import {
   createMultihash,
   encodeBase58Btc,
   MultibaseEncoding,
   MultihashAlgorithm,
   multibaseEncode,
-} from '../src/utils/multiformats';
-import * as vmUtilsModule from '../src/utils/verification-methods';
-import { countVerifiedWitnessApprovals, createWitnessProof } from '../src/witness';
+} from '../src/utils/multiformats.js';
+import * as vmUtilsModule from '../src/utils/verification-methods.js';
+import { countVerifiedWitnessApprovals, createWitnessProof } from '../src/witness.js';
 
 // Mock crypto implementation for testing
 class MockCryptoImplementation extends AbstractCrypto implements Verifier {

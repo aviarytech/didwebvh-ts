@@ -9,11 +9,11 @@ import type {
   SigningOutput,
   VerificationMethod,
   Verifier,
-} from './interfaces';
-import { concatBuffers } from './utils/buffer';
-import { canonicalizeStrict } from './utils/canonicalize';
-import { createHash } from './utils/crypto';
-import { createDate } from './utils/iso8601-datetime';
+} from './interfaces.js';
+import { concatBuffers } from './utils/buffer.js';
+import { canonicalizeStrict } from './utils/canonicalize.js';
+import { createHash } from './utils/crypto.js';
+import { createDate } from './utils/iso8601-datetime.js';
 
 /**
  * Creates a Data Integrity proof template from explicit input values.

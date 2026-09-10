@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { cmp, getLatestStrictSemverTagBefore, isSingleSemverBump, parseTag } from '../scripts/validate-release.ts';
+import { cmp, getLatestStrictSemverTagBefore, isSingleSemverBump, parseTag } from '../scripts/validate-release.js';
 
 describe('validate-release helpers', () => {
   test('parseTag accepts strict vMAJOR.MINOR.PATCH only', () => {

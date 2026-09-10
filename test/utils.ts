@@ -1,7 +1,7 @@
 import { ed25519 } from '@noble/curves/ed25519.js';
-import { METHOD, METHOD_PARAMETER_KEYS, METHOD_PROTOCOL_V0_5, SCID_PLACEHOLDER } from '../src/constants';
-import { AbstractCrypto, prepareDataForSigning } from '../src/cryptography';
-import { createDIDDoc, replaceCreateDidPlaceholders } from '../src/did-document';
+import { METHOD, METHOD_PARAMETER_KEYS, METHOD_PROTOCOL_V0_5, SCID_PLACEHOLDER } from '../src/constants.js';
+import { AbstractCrypto, prepareDataForSigning } from '../src/cryptography.js';
+import { createDIDDoc, replaceCreateDidPlaceholders } from '../src/did-document.js';
 import type {
   DIDLog,
   DIDLogEntry,
@@ -12,11 +12,11 @@ import type {
   VerificationMethod,
   Verifier,
   WitnessParameter,
-} from '../src/interfaces';
-import { deepClone, normalizeDidAddress } from '../src/utils';
-import { createSCID, deriveHash } from '../src/utils/crypto';
-import { createDate, createNextVersionTime } from '../src/utils/iso8601-datetime';
-import { MultibaseEncoding, multibaseDecode, multibaseEncode } from '../src/utils/multiformats';
+} from '../src/interfaces.js';
+import { createSCID, deriveHash } from '../src/utils/crypto.js';
+import { createDate, createNextVersionTime } from '../src/utils/iso8601-datetime.js';
+import { MultibaseEncoding, multibaseDecode, multibaseEncode } from '../src/utils/multiformats.js';
+import { deepClone, normalizeDidAddress } from '../src/utils.js';
 
 export const createFutureDIDLog = async (authKey: VerificationMethod, minutesAhead: number): Promise<DIDLog> => {
   const futureCreated = new Date(Date.now() + minutesAhead * 60 * 1000).toISOString();

@@ -15,7 +15,15 @@
     "rules": {
       "correctness": {
         "noUnusedVariables": "off",
-        "noUnusedFunctionParameters": "off"
+        "noUnusedFunctionParameters": "off",
+        "useImportExtensions": {
+          "level": "error",
+          "options": {
+            "extensionMappings": {
+              "ts": "js"
+            }
+          }
+        }
       },
       "complexity": {
         "noUselessSwitchCase": "off"
@@ -30,13 +38,16 @@
     }
   },
   "files": {
-    "includes": ["src/**", "test/**", "examples/**", "scripts/**"]
+    "includes": ["src/**", "test/**", "examples/**", "scripts/**", "!!**/node_modules"]
   },
   "overrides": [
     {
       "includes": ["examples/**", "scripts/**"],
       "linter": {
         "rules": {
+          "correctness": {
+            "useImportExtensions": "off"
+          },
           "complexity": {
             "noUselessSwitchCase": "off"
           },

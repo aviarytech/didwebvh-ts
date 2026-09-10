@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, test } from 'vitest';
-import type { DIDLog, DIDLogEntry } from '../src/interfaces';
-import { createDID, deactivateDID, resolveDIDFromLog, updateDID } from '../src/method';
-import { deriveHash, deriveNextKeyHash } from '../src/utils/crypto';
+import type { DIDLog, DIDLogEntry } from '../src/interfaces.js';
+import { createDID, deactivateDID, resolveDIDFromLog, updateDID } from '../src/method.js';
+import { deriveHash, deriveNextKeyHash } from '../src/utils/crypto.js';
 import {
   appendV05LogEntry,
   asPublicVerificationMethods,
@@ -9,7 +9,7 @@ import {
   createTestSigner,
   createTestVerifier,
   generateTestVerificationMethod,
-} from './utils';
+} from './utils.js';
 
 describe('Backwards Compatibility', () => {
   describe('v0.5 Genesis Resolution', () => {

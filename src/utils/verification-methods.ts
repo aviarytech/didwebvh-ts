@@ -1,7 +1,7 @@
-import type { VerificationRelationship } from '../constants';
-import { DID_KEY_PREFIX, VERIFICATION_RELATIONSHIPS } from '../constants';
-import type { DIDDoc, ParsedDidKeyVerificationMethod, VerificationMethod } from '../interfaces';
-import { multibaseDecode } from './multiformats';
+import type { VerificationRelationship } from '../constants.js';
+import { DID_KEY_PREFIX, VERIFICATION_RELATIONSHIPS } from '../constants.js';
+import type { DIDDoc, ParsedDidKeyVerificationMethod, VerificationMethod } from '../interfaces.js';
+import { multibaseDecode } from './multiformats.js';
 
 type NormalizedVerificationMethods = Required<Pick<DIDDoc, 'verificationMethod' | VerificationRelationship>>;
 

@@ -6,7 +6,7 @@ import {
   parseCanonicalAddress,
   parseDidWebvhIdentifier,
   requireDidDocumentId,
-} from '../src/utils';
+} from '../src/utils.js';
 
 describe('Resolver URL derivation', () => {
   test('Uses https for localhost DID host', () => {
