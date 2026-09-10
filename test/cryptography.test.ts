@@ -35,11 +35,11 @@ class MockCryptoImplementation extends AbstractCrypto implements Verifier {
     this.shouldVerifySucceed = shouldVerifySucceed;
   }
 
-  async sign(input: SigningInput): Promise<SigningOutput> {
+  async sign(_input: SigningInput): Promise<SigningOutput> {
     return { proofValue: multibaseEncode(this.mockSignature, MultibaseEncoding.BASE58_BTC) };
   }
 
-  async verify(signature: Uint8Array, message: Uint8Array, publicKey: Uint8Array): Promise<boolean> {
+  async verify(_signature: Uint8Array, _message: Uint8Array, _publicKey: Uint8Array): Promise<boolean> {
     return this.shouldVerifySucceed;
   }
 }
@@ -184,13 +184,6 @@ describe('Injectable Cryptography Tests', () => {
   });
 
   test('Count verified witness approvals with successful implementation', async () => {
-    const logEntry = {
-      versionId: 'test-version',
-      versionTime: '2024-03-06T00:00:00Z',
-      parameters: {},
-      state: testDoc,
-    };
-
     const witnessProofs = [
       {
         versionId: 'test-version',
@@ -212,18 +205,11 @@ describe('Injectable Cryptography Tests', () => {
       ],
     };
 
-    const approvals = await countVerifiedWitnessApprovals(logEntry, witnessProofs, witness, mockImplementation);
+    const approvals = await countVerifiedWitnessApprovals(witnessProofs, witness, mockImplementation);
     expect(approvals).toBe(1);
   });
 
   test('Count verified witness approvals logs and skips invalid proofs', async () => {
-    const logEntry = {
-      versionId: 'test-version',
-      versionTime: '2024-03-06T00:00:00Z',
-      parameters: {},
-      state: testDoc,
-    };
-
     const witnessProofs = [
       {
         versionId: 'test-version',
@@ -252,12 +238,7 @@ describe('Injectable Cryptography Tests', () => {
     };
 
     try {
-      const approvals = await countVerifiedWitnessApprovals(
-        logEntry,
-        witnessProofs,
-        witness,
-        failingMockImplementation
-      );
+      const approvals = await countVerifiedWitnessApprovals(witnessProofs, witness, failingMockImplementation);
       expect(approvals).toBe(0);
     } finally {
       console.warn = originalWarn;
@@ -286,13 +267,6 @@ describe('Injectable Cryptography Tests', () => {
   });
 
   test('Require verifier implementation for witness proofs', async () => {
-    const logEntry = {
-      versionId: 'test-version',
-      versionTime: '2024-03-06T00:00:00Z',
-      parameters: {},
-      state: testDoc,
-    };
-
     const witnessProofs = [
       {
         versionId: 'test-version',
@@ -314,7 +288,7 @@ describe('Injectable Cryptography Tests', () => {
       ],
     };
 
-    expect(countVerifiedWitnessApprovals(logEntry, witnessProofs, witness)).rejects.toThrow(
+    expect(countVerifiedWitnessApprovals(witnessProofs, witness)).rejects.toThrow(
       'Verifier implementation is required'
     );
   });
