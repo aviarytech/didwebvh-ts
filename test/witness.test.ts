@@ -275,7 +275,7 @@ describe('Witness Implementation Tests', async () => {
     expect(resolved.didDocumentMetadata?.updateKeys).toEqual([authKey2.publicKeyMultibase!]);
   });
 
-  test('API e2e: rejects did:key-formatted updateKeys in update flow', async () => {
+  test('API e2e: normalizes did:key-formatted updateKeys in update flow', async () => {
     const authKey2 = await generateTestVerificationMethod();
     const authKey3 = await generateTestVerificationMethod();
 
@@ -317,25 +317,27 @@ describe('Witness Implementation Tests', async () => {
       witnessVerificationMethod(witness1)
     );
 
-    await expect(
-      updateDID({
-        log: firstUpdate.log,
-        signer: createTestSigner(authKey2),
-        updateKeys: [authKey3.publicKeyMultibase!],
-        verificationMethods: asPublicVerificationMethods(authKey3),
-        verifier: testImplementation,
-        witnessProofs: [
-          {
-            versionId: created.log[0].versionId,
-            proof: [version1Proof],
-          },
-          {
-            versionId: firstUpdate.log[1].versionId,
-            proof: [version2Proof],
-          },
-        ],
-      })
-    ).rejects.toThrow('is not authorized to update.');
+    expect(firstUpdate.log[1].parameters.updateKeys).toEqual([authKey2.publicKeyMultibase!]);
+
+    const secondUpdate = await updateDID({
+      log: firstUpdate.log,
+      signer: createTestSigner(authKey2),
+      updateKeys: [authKey3.publicKeyMultibase!],
+      verificationMethods: asPublicVerificationMethods(authKey3),
+      verifier: testImplementation,
+      witnessProofs: [
+        {
+          versionId: created.log[0].versionId,
+          proof: [version1Proof],
+        },
+        {
+          versionId: firstUpdate.log[1].versionId,
+          proof: [version2Proof],
+        },
+      ],
+    });
+    expect(secondUpdate.log).toHaveLength(3);
+    expect(secondUpdate.meta.updateKeys).toEqual([authKey3.publicKeyMultibase!]);
   });
 
   test('API e2e: rejects did:webvh verificationMethod in DID log entry proof', async () => {

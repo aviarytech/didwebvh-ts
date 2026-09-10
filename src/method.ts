@@ -22,6 +22,7 @@ import {
   MAX_FUTURE_SKEW_MS,
   validateUtcIso8601NotInFuture,
 } from './utils/iso8601-datetime.js';
+import { normalizeUpdateKeys } from './utils/verification-methods.js';
 import { fetchLogFromIdentifier, normalizeDidAddress, parseDidWebvhIdentifier, requireDidDocumentId } from './utils.js';
 import { defaultVerifier } from './verifier.js';
 import { resolveWitnessParameter, validateWitnessParameter } from './witness.js';
@@ -82,6 +83,8 @@ const mergeMetaFromEntry = ({
 
 /**
  * Creates a new did:webvh DID and initial DID log.
+ * updateKeys accepts Ed25519 multikeys or did:key identifiers (with an optional
+ * matching fragment); entries and metadata always contain bare multikeys.
  *
  * @param options DID creation options.
  * @returns The created DID, resolved document, and DID log.
@@ -90,6 +93,7 @@ export const createDID = async (options: CreateDIDInterface): Promise<CreateDIDR
   if (!options.updateKeys) {
     throw new Error('Update keys not supplied');
   }
+  options = { ...options, updateKeys: normalizeUpdateKeys(options.updateKeys) };
 
   if (options.witness?.witnesses && options.witness.witnesses.length > 0) {
     validateWitnessParameter(options.witness);
@@ -180,11 +184,16 @@ export const resolveDIDFromLog = async (log: DIDLog, options: ResolutionOptions 
 
 /**
  * Updates an existing DID log with a new entry.
+ * Supplied updateKeys are normalized from Ed25519 multikeys or did:key identifiers
+ * to bare multikeys before preparation, including pre-rotation hash checks.
  *
  * @param options DID update options.
  * @returns The updated DID, resolved document, and DID log.
  */
 export const updateDID = async (options: UpdateDIDInterface): Promise<UpdateDIDResult> => {
+  if (options.updateKeys !== undefined) {
+    options = { ...options, updateKeys: normalizeUpdateKeys(options.updateKeys) };
+  }
   const log = options.log;
   const lastEntry = log[log.length - 1];
   const lastMeta = (await resolveLog(log, { verifier: options.verifier, witnessProofs: options.witnessProofs })).meta;
@@ -231,6 +240,8 @@ export const updateDID = async (options: UpdateDIDInterface): Promise<UpdateDIDR
 
 /**
  * Deactivates an existing DID by appending a deactivation entry.
+ * Supplied updateKeys are normalized from Ed25519 multikeys or did:key identifiers
+ * to bare multikeys before preparation, including pre-rotation hash checks.
  *
  * @param options DID deactivation options.
  * @returns The deactivated DID result and updated DID log.
@@ -238,6 +249,9 @@ export const updateDID = async (options: UpdateDIDInterface): Promise<UpdateDIDR
 export const deactivateDID = async (
   options: DeactivateDIDInterface & { updateKeys?: string[] }
 ): Promise<{ did: string; doc: DIDDoc; meta: DIDResolutionMeta; log: DIDLog }> => {
+  if (options.updateKeys !== undefined) {
+    options = { ...options, updateKeys: normalizeUpdateKeys(options.updateKeys) };
+  }
   const log = options.log;
   const lastEntry = log[log.length - 1];
   const lastMeta = (await resolveLog(log, { verifier: options.verifier })).meta;
