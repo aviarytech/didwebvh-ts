@@ -130,7 +130,40 @@ The following commands are defined in the `package.json` file:
   pnpm cli
 ```
 
-The CLI accepts a `--watcher` option during create and update operations to specify one or more watcher URLs.
+The CLI accepts a `--watcher` option during create and update operations to specify one or more watcher URLs. Witnessed DID operations use the published witness proof file by default:
+
+```bash
+pnpm cli -- update --log ./did.jsonl --output ./updated-did.jsonl
+pnpm cli -- deactivate --log ./did.jsonl --output ./deactivated-did.jsonl
+```
+
+Pass `--witness-file` to use a local `did-witness.json` file instead:
+
+```bash
+pnpm cli -- update \
+  --log ./did.jsonl \
+  --output ./updated-did.jsonl \
+  --witness-file ./did-witness.json
+
+pnpm cli -- deactivate \
+  --log ./did.jsonl \
+  --output ./deactivated-did.jsonl \
+  --witness-file ./did-witness.json
+```
+
+When `--witness-file` is omitted, `update` and `deactivate` retain the normal network-fetch behavior. Providing a witness file avoids that fetch; an empty JSON array (`[]`) explicitly disables fetching and fails fast when witnesses are required.
+
+Use `verify-proofs` to inspect a local witness proof file before publishing or updating a DID:
+
+```bash
+pnpm cli -- verify-proofs \
+  --log ./did.jsonl \
+  --witness-file ./did-witness.json
+```
+
+The command prints the `verifyWitnessProofs` result as JSON, including per-entry
+approval counts and satisfaction status. It exits successfully when all witness
+thresholds are satisfied and exits with status `1` when they are not.
 
 1. `build`: Build the package.
 
@@ -313,7 +346,7 @@ Method-specific metadata (`scid`, `updateKeys`, `nextKeyHashes`, `prerotation`, 
   Derives the witness approvals required for each entry in a DID log that requires witnessing, by applying the did:webvh witness transition rules (genesis activation, inheritance, replacement, and removal). Synchronous, performs no network fetch, and requires no `Verifier`. Returns `[]` when the log has no active witness requirement.
 
 - `verifyWitnessProofs(log: DIDLog, witnessProofs: WitnessProofFileEntry[], options?: { verifier?: Verifier }): Promise<WitnessVerificationResult>`
-  Verifies every witness requirement in a DID log against the supplied `witnessProofs`, without any network fetch — proofs must be provided by the caller (e.g. proofs obtained for a proposed, not-yet-published log chain tip before it and its witness proofs are published). Returns `{ verified: boolean, requirements: (WitnessRequirement & { approvals: number, satisfied: boolean })[] }`, reporting an unmet threshold as data (`verified: false`) rather than throwing. All other verification failures (hash chain, SCID, controller proof, etc.) still throw.
+  Verifies every witness requirement in a DID log against the supplied `witnessProofs`, without any network fetch — proofs must be provided by the caller (e.g. proofs obtained for a proposed, not-yet-published log chain tip before it and its witness proofs are published). Returns `{ verified, requirements, rejectedProofs }`, reporting an unmet threshold as data (`verified: false`) rather than throwing. `rejectedProofs` contains structured diagnostics for discarded proofs, including a library-defined rejection code, proof location, verification method, and governing requirement when available. All other verification failures (hash chain, SCID, controller proof, etc.) still throw.
 
 ### Witness lifecycle sequence
 
