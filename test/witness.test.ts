@@ -495,6 +495,55 @@ describe('Witness Implementation Tests', async () => {
     ]);
   });
 
+  test('Disable witnessing with an explicit empty witness configuration', async () => {
+    const versionId = initialDID.log[0].versionId;
+    const initialProofs = [
+      {
+        versionId,
+        proof: await Promise.all([
+          createWitnessProof(createWitnessSigner(witness1), versionId, witnessVerificationMethod(witness1)),
+          createWitnessProof(createWitnessSigner(witness2), versionId, witnessVerificationMethod(witness2)),
+        ]),
+      },
+    ];
+
+    const updatedDID = await updateDID({
+      log: initialDID.log,
+      signer: createTestSigner(authKey),
+      updateKeys: [authKey.publicKeyMultibase!],
+      verificationMethods: asPublicVerificationMethods(authKey),
+      witness: {},
+      verifier: testImplementation,
+      witnessProofs: initialProofs,
+    });
+
+    const updatedVersionId = updatedDID.log[1].versionId;
+    const updatedProofs = {
+      versionId: updatedVersionId,
+      proof: await Promise.all([
+        createWitnessProof(createWitnessSigner(witness1), updatedVersionId, witnessVerificationMethod(witness1)),
+        createWitnessProof(createWitnessSigner(witness2), updatedVersionId, witnessVerificationMethod(witness2)),
+      ]),
+    };
+    const allWitnessProofs = [...initialProofs, updatedProofs];
+
+    const resolved = await resolveDIDFromLog(updatedDID.log, {
+      verifier: testImplementation,
+      witnessProofs: allWitnessProofs,
+    });
+    expect(resolved.didDocumentMetadata.witness).toEqual({});
+
+    const requirements = getWitnessRequirements(updatedDID.log);
+    expect(requirements).toHaveLength(2);
+    expect(requirements[1]).toMatchObject({
+      versionId: updatedVersionId,
+      versionNumber: 2,
+      threshold: 2,
+      witnesses: [{ id: `did:key:${witness1.publicKeyMultibase}` }, { id: `did:key:${witness2.publicKeyMultibase}` }],
+    });
+    await expectResolverRequirementsToMatch(updatedDID.log, allWitnessProofs);
+  });
+
   describe('getWitnessRequirements', () => {
     test('Genesis without witnesses returns no requirements', async () => {
       const noWitnessDID = await createDID({
@@ -506,6 +555,26 @@ describe('Witness Implementation Tests', async () => {
       });
 
       expect(getWitnessRequirements(noWitnessDID.log)).toEqual([]);
+    });
+
+    test('Keeps subsequent entries inactive when genesis has no witnesses and the entry omits witnesses', async () => {
+      const noWitnessDID = await createDID({
+        address: 'example.com',
+        signer: createTestSigner(authKey),
+        updateKeys: [authKey.publicKeyMultibase!],
+        verificationMethods: asPublicVerificationMethods(authKey),
+        verifier: testImplementation,
+      });
+      const updatedDID = await updateDID({
+        log: noWitnessDID.log,
+        signer: createTestSigner(authKey),
+        updateKeys: [authKey.publicKeyMultibase!],
+        verificationMethods: asPublicVerificationMethods(authKey),
+        verifier: testImplementation,
+      });
+
+      expect(getWitnessRequirements(updatedDID.log)).toEqual([]);
+      await expectResolverRequirementsToMatch(updatedDID.log, []);
     });
 
     test('Genesis with witnesses returns versionId, normalized threshold, and witness list', async () => {
@@ -522,6 +591,141 @@ describe('Witness Implementation Tests', async () => {
           ],
         },
       ]);
+    });
+
+    test('Reports a witness requirement when witnesses are first activated on an update', async () => {
+      const noWitnessDID = await createDID({
+        address: 'example.com',
+        signer: createTestSigner(authKey),
+        updateKeys: [authKey.publicKeyMultibase!],
+        verificationMethods: asPublicVerificationMethods(authKey),
+        verifier: testImplementation,
+      });
+      const updatedDID = await updateDID({
+        log: noWitnessDID.log,
+        signer: createTestSigner(authKey),
+        updateKeys: [authKey.publicKeyMultibase!],
+        verificationMethods: asPublicVerificationMethods(authKey),
+        witness: {
+          threshold: 1,
+          witnesses: [{ id: `did:key:${witness1.publicKeyMultibase}` }],
+        },
+        verifier: testImplementation,
+      });
+
+      const requirements = getWitnessRequirements(updatedDID.log);
+      expect(requirements).toEqual([
+        {
+          versionId: updatedDID.log[1].versionId,
+          versionNumber: 2,
+          threshold: 1,
+          witnesses: [{ id: `did:key:${witness1.publicKeyMultibase}` }],
+        },
+      ]);
+      await expectResolverRequirementsToMatch(updatedDID.log, [
+        {
+          versionId: updatedDID.log[1].versionId,
+          proof: [
+            await createWitnessProof(
+              createWitnessSigner(witness1),
+              updatedDID.log[1].versionId,
+              witnessVerificationMethod(witness1)
+            ),
+          ],
+        },
+      ]);
+    });
+
+    test('Carries witness requirements forward when a subsequent entry omits witnesses', async () => {
+      const versionId = initialDID.log[0].versionId;
+      const initialProofs = [
+        {
+          versionId,
+          proof: await Promise.all([
+            createWitnessProof(createWitnessSigner(witness1), versionId, witnessVerificationMethod(witness1)),
+            createWitnessProof(createWitnessSigner(witness2), versionId, witnessVerificationMethod(witness2)),
+          ]),
+        },
+      ];
+      const updatedDID = await updateDID({
+        log: initialDID.log,
+        signer: createTestSigner(authKey),
+        updateKeys: [authKey.publicKeyMultibase!],
+        verificationMethods: asPublicVerificationMethods(authKey),
+        verifier: testImplementation,
+        witnessProofs: initialProofs,
+      });
+      const updatedVersionId = updatedDID.log[1].versionId;
+      const updatedProofs = {
+        versionId: updatedVersionId,
+        proof: await Promise.all([
+          createWitnessProof(createWitnessSigner(witness1), updatedVersionId, witnessVerificationMethod(witness1)),
+          createWitnessProof(createWitnessSigner(witness2), updatedVersionId, witnessVerificationMethod(witness2)),
+        ]),
+      };
+
+      expect(getWitnessRequirements(updatedDID.log)).toEqual([
+        {
+          versionId,
+          versionNumber: 1,
+          threshold: 2,
+          witnesses: [
+            { id: `did:key:${witness1.publicKeyMultibase}` },
+            { id: `did:key:${witness2.publicKeyMultibase}` },
+          ],
+        },
+        {
+          versionId: updatedVersionId,
+          versionNumber: 2,
+          threshold: 2,
+          witnesses: [
+            { id: `did:key:${witness1.publicKeyMultibase}` },
+            { id: `did:key:${witness2.publicKeyMultibase}` },
+          ],
+        },
+      ]);
+      await expectResolverRequirementsToMatch(updatedDID.log, [...initialProofs, updatedProofs]);
+    });
+
+    test('Uses the previous witness configuration for a replacement entry', async () => {
+      const versionId = initialDID.log[0].versionId;
+      const initialProofs = [
+        {
+          versionId,
+          proof: await Promise.all([
+            createWitnessProof(createWitnessSigner(witness1), versionId, witnessVerificationMethod(witness1)),
+            createWitnessProof(createWitnessSigner(witness2), versionId, witnessVerificationMethod(witness2)),
+          ]),
+        },
+      ];
+      const updatedDID = await updateDID({
+        log: initialDID.log,
+        signer: createTestSigner(authKey),
+        updateKeys: [authKey.publicKeyMultibase!],
+        verificationMethods: asPublicVerificationMethods(authKey),
+        witness: {
+          threshold: 1,
+          witnesses: [{ id: `did:key:${witness3.publicKeyMultibase}` }],
+        },
+        verifier: testImplementation,
+        witnessProofs: initialProofs,
+      });
+      const updatedVersionId = updatedDID.log[1].versionId;
+      const updatedProofs = {
+        versionId: updatedVersionId,
+        proof: await Promise.all([
+          createWitnessProof(createWitnessSigner(witness1), updatedVersionId, witnessVerificationMethod(witness1)),
+          createWitnessProof(createWitnessSigner(witness2), updatedVersionId, witnessVerificationMethod(witness2)),
+        ]),
+      };
+
+      expect(getWitnessRequirements(updatedDID.log)[1]).toEqual({
+        versionId: updatedVersionId,
+        versionNumber: 2,
+        threshold: 2,
+        witnesses: [{ id: `did:key:${witness1.publicKeyMultibase}` }, { id: `did:key:${witness2.publicKeyMultibase}` }],
+      });
+      await expectResolverRequirementsToMatch(updatedDID.log, [...initialProofs, updatedProofs]);
     });
 
     test('Returns defensive copies that callers cannot use to mutate internal state', async () => {
