@@ -2,10 +2,10 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
-import { generateTestVerificationMethod, TestCryptoImplementation } from '../../../test/utils';
-import type { VerificationMethod } from '../../interfaces';
-import { resolveDIDFromLog } from '../../method';
-import { readLogFromDisk } from '../persistence';
+import { generateTestVerificationMethod, TestCryptoImplementation } from '../../../test/utils.js';
+import type { VerificationMethod } from '../../interfaces.js';
+import { resolveDIDFromLog } from '../../method.js';
+import { readLogFromDisk } from '../persistence.js';
 
 const TEST_DIR = join(process.cwd(), 'test', 'temp-cli-e2e');
 const ENV_FILE = join(process.cwd(), '.env');

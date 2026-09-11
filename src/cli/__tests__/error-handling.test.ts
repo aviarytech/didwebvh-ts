@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, afterEach, describe, expect, test, vi } from 'vitest';
-import { CliError, handleCreate, handleDeactivate, handleResolve, handleUpdate, main } from '../index';
+import { CliError, handleCreate, handleDeactivate, handleResolve, handleUpdate, main } from '../index.js';
 
 const TEST_DIR = join(process.cwd(), 'test', 'temp-cli-error-handling');
 fs.mkdirSync(TEST_DIR, { recursive: true });
