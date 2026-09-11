@@ -806,6 +806,7 @@ describe('Witness Implementation Tests', async () => {
           satisfied: true,
         },
       ]);
+      await expectResolverRequirementsToMatch(deactivated.log, cumulativeWitnessProofs);
     });
 
     test('deactivateDID rejects when a witness is required but witnessProofs is omitted, without a network fetch', async () => {
@@ -1225,6 +1226,20 @@ describe('Witness Implementation Tests', async () => {
         versionNumber: 2,
         threshold: 1,
         witnesses: [{ id: witnessDid }],
+      },
+    ]);
+
+    const inheritedVersionId = updatedDid.log[1].versionId;
+    await expectResolverRequirementsToMatch(updatedDid.log, [
+      {
+        versionId: inheritedVersionId,
+        proof: [
+          await createWitnessProof(
+            createWitnessSigner(witness1),
+            inheritedVersionId,
+            witnessVerificationMethod(witness1)
+          ),
+        ],
       },
     ]);
   });

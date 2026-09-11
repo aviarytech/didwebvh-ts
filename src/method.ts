@@ -1,8 +1,8 @@
 import type { DIDResolutionResult } from 'did-resolver';
 import { DEFAULT_TTL_SECONDS, SCID_PLACEHOLDER } from './constants.js';
 import { prepareDeactivationEntry, prepareGenesisEntry, prepareUpdateEntry } from './core/entries.js';
-import { resolveLog } from './core/resolution.js';
-import { computeWitnessRequirementChecks, type WitnessCheckResult } from './core/witness-requirements.js';
+import { resolveLog, resolveLogWithWitnessResults } from './core/resolution.js';
+import { computeWitnessRequirementChecks } from './core/witness-requirements.js';
 import { generateParallelDidWeb } from './did-document.js';
 import type {
   CreateDIDInterface,
@@ -326,14 +326,9 @@ export const verifyWitnessProofs = async (
   witnessProofs: WitnessProofFileEntry[],
   options: VerifyWitnessProofsOptions = {}
 ): Promise<WitnessVerificationResult> => {
-  let checkOutcomes: WitnessCheckResult[] = [];
-
-  await resolveLog(log, {
+  const { witnessChecks: checkOutcomes } = await resolveLogWithWitnessResults(log, {
     witnessProofs,
     verifier: options.verifier ?? defaultVerifier,
-    onWitnessChecksComputed: (checks) => {
-      checkOutcomes = checks;
-    },
   });
 
   const requirements = checkOutcomes.map((check) => ({
