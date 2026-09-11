@@ -1,7 +1,8 @@
 import type { DIDResolutionResult } from 'did-resolver';
 import { DEFAULT_TTL_SECONDS, SCID_PLACEHOLDER } from './constants.js';
 import { prepareDeactivationEntry, prepareGenesisEntry, prepareUpdateEntry } from './core/entries.js';
-import { resolveLog } from './core/resolution.js';
+import { resolveLog, resolveLogWithWitnessResults } from './core/resolution.js';
+import { computeWitnessRequirementChecks } from './core/witness-requirements.js';
 import { generateParallelDidWeb } from './did-document.js';
 import type {
   CreateDIDInterface,
@@ -14,6 +15,10 @@ import type {
   ResolutionOptions,
   UpdateDIDInterface,
   UpdateDIDResult,
+  VerifyWitnessProofsOptions,
+  WitnessProofFileEntry,
+  WitnessRequirement,
+  WitnessVerificationResult,
 } from './interfaces.js';
 import { mapErrorToCode, toErrorResult, toResolutionResult, validateSingleVersionSelector } from './resolver-result.js';
 import {
@@ -22,9 +27,15 @@ import {
   MAX_FUTURE_SKEW_MS,
   validateUtcIso8601NotInFuture,
 } from './utils/iso8601-datetime.js';
-import { fetchLogFromIdentifier, normalizeDidAddress, parseDidWebvhIdentifier, requireDidDocumentId } from './utils.js';
+import {
+  deepClone,
+  fetchLogFromIdentifier,
+  normalizeDidAddress,
+  parseDidWebvhIdentifier,
+  requireDidDocumentId,
+} from './utils.js';
 import { defaultVerifier } from './verifier.js';
-import { resolveWitnessParameter, validateWitnessParameter } from './witness.js';
+import { normalizeWitnessThreshold, resolveWitnessParameter, validateWitnessParameter } from './witness.js';
 
 const buildMetaFromEntry = (entry: DIDLogEntry): DIDResolutionMeta => {
   const resolvedWitness = resolveWitnessParameter(entry.parameters);
@@ -240,7 +251,7 @@ export const deactivateDID = async (
 ): Promise<{ did: string; doc: DIDDoc; meta: DIDResolutionMeta; log: DIDLog }> => {
   const log = options.log;
   const lastEntry = log[log.length - 1];
-  const lastMeta = (await resolveLog(log, { verifier: options.verifier })).meta;
+  const lastMeta = (await resolveLog(log, { verifier: options.verifier, witnessProofs: options.witnessProofs })).meta;
   if (lastMeta.deactivated) {
     throw new Error('DID already deactivated');
   }
@@ -274,5 +285,58 @@ export const deactivateDID = async (
     doc: entry.state,
     meta,
     log: [...log, entry],
+  };
+};
+
+/**
+ * Derives the witness approvals required for each entry in a DID log that requires witnessing.
+ *
+ * @param log The DID log to inspect.
+ * @returns The witness requirements for each entry that requires witnessing.
+ */
+export const getWitnessRequirements = (log: DIDLog): WitnessRequirement[] => {
+  const checks = computeWitnessRequirementChecks(log);
+
+  return checks.map((check) => ({
+    versionId: check.targetVersionId,
+    versionNumber: check.targetVersionNumber,
+    threshold: normalizeWitnessThreshold(check.witness.threshold),
+    witnesses: deepClone(check.witness.witnesses ?? []),
+  }));
+};
+
+/**
+ * Verifies that every witness requirement in a DID log is satisfied by the locally supplied
+ * witness proofs without network fetch.
+ *
+ * @param log The DID log to verify.
+ * @param witnessProofs The witness proofs to verify against the log, in place of a network fetch.
+ * @param options Optional verifier override.
+ * @returns Per-entry witness requirements annotated with counted approvals and satisfaction.
+ * @throws If the log or supplied proofs fail any non-witness-threshold verification.
+ */
+export const verifyWitnessProofs = async (
+  log: DIDLog,
+  witnessProofs: WitnessProofFileEntry[],
+  options: VerifyWitnessProofsOptions = {}
+): Promise<WitnessVerificationResult> => {
+  const { witnessChecks: checkOutcomes } = await resolveLogWithWitnessResults(log, {
+    witnessProofs,
+    verifier: options.verifier ?? defaultVerifier,
+  });
+
+  const requirements = checkOutcomes.map((check) => ({
+    versionId: check.targetVersionId,
+    versionNumber: check.targetVersionNumber,
+    threshold: normalizeWitnessThreshold(check.witness.threshold),
+    witnesses: deepClone(check.witness.witnesses ?? []),
+    approvals: check.approvals,
+    satisfied: check.satisfied,
+  }));
+
+  return {
+    verified: requirements.every((requirement) => requirement.satisfied),
+    requirements,
+    rejectedProofs: checkOutcomes.flatMap((check) => check.rejectedProofs),
   };
 };

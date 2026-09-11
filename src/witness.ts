@@ -3,11 +3,13 @@ import type {
   DataIntegrityProof,
   DataIntegrityProofTemplate,
   DIDLogEntry,
+  ParsedDidKeyVerificationMethod,
   Signer,
   Verifier,
   WitnessEntry,
   WitnessParameterResolution,
   WitnessProofFileEntry,
+  WitnessProofRejection,
   WitnessSigningOptions,
   WitnessSigningResult,
 } from './interfaces.js';
@@ -226,12 +228,13 @@ export async function countVerifiedWitnessApprovals(
   witnessProofs: WitnessProofFileEntry[],
   currentWitness: WitnessParameterResolution,
   verifier?: Verifier
-): Promise<number> {
+): Promise<{ approvals: number; rejectedProofs: WitnessProofRejection[] }> {
   if (!verifier) {
     throw new Error('Verifier implementation is required');
   }
 
   let approvals = 0;
+  const rejectedProofs: WitnessProofRejection[] = [];
   const processedWitnesses = new Set<string>();
   const witnessesByDid = new Map(
     (currentWitness.witnesses ?? []).map((witness) => {
@@ -241,33 +244,56 @@ export async function countVerifiedWitnessApprovals(
   );
 
   for (const proofSet of witnessProofs) {
-    for (const proof of proofSet.proof) {
+    for (const [proofIndex, proof] of proofSet.proof.entries()) {
+      let code: WitnessProofRejection['code'] = 'invalid-signature';
       try {
         if (proof.type !== 'DataIntegrityProof') {
+          code = 'invalid-proof-type';
           throw new Error('Invalid witness proof type');
         }
 
         if (proof.proofPurpose !== 'assertionMethod') {
+          code = 'invalid-proof-purpose';
           throw new Error('Invalid witness proof purpose');
         }
 
         if (proof.cryptosuite !== 'eddsa-jcs-2022') {
+          code = 'invalid-cryptosuite';
           throw new Error('Invalid witness proof cryptosuite');
         }
 
-        const parsedVerificationMethod = parseDidKeyVerificationMethod(proof.verificationMethod);
+        let parsedVerificationMethod: ParsedDidKeyVerificationMethod;
+        try {
+          parsedVerificationMethod = parseDidKeyVerificationMethod(proof.verificationMethod);
+        } catch {
+          code = 'invalid-verification-method';
+          throw new Error(`Invalid verification method ${proof.verificationMethod}`);
+        }
         const witness = witnessesByDid.get(parsedVerificationMethod.did);
-        if (!witness || processedWitnesses.has(witness.id)) {
-          continue;
+        if (!witness) {
+          code = 'unknown-witness';
+          throw new Error(`Witness is not in the active witness list: ${parsedVerificationMethod.did}`);
+        }
+        if (processedWitnesses.has(witness.id)) {
+          code = 'duplicate-witness';
+          throw new Error(`Witness has already provided an approval: ${witness.id}`);
         }
 
         const publicKeyMultibase = parsedVerificationMethod.keyMultibase;
         if (!publicKeyMultibase) {
+          code = 'invalid-verification-method';
           throw new Error(`Verification Method ${proof.verificationMethod} not found`);
         }
 
-        const publicKey = multibaseDecode(publicKeyMultibase).bytes;
+        let publicKey: Uint8Array;
+        try {
+          publicKey = multibaseDecode(publicKeyMultibase).bytes;
+        } catch {
+          code = 'invalid-public-key';
+          throw new Error(`Invalid public key in verification method ${proof.verificationMethod}`);
+        }
         if (publicKey.length !== 34) {
+          code = 'invalid-public-key';
           throw new Error(`Invalid public key length ${publicKey.length} (should be 34 bytes)`);
         }
 
@@ -280,11 +306,18 @@ export async function countVerifiedWitnessApprovals(
         const dataHash = await createHash(canonicalizedData);
         const proofHash = await createHash(canonicalizedProof);
         const input = concatBuffers(proofHash, dataHash);
-        const signature = multibaseDecode(proofValue).bytes;
+        let signature: Uint8Array;
+        try {
+          signature = multibaseDecode(proofValue).bytes;
+        } catch {
+          code = 'invalid-signature';
+          throw new Error('Invalid witness proof signature encoding');
+        }
 
         const verified = await verifier.verify(signature, input, publicKey.slice(2));
 
         if (!verified) {
+          code = 'invalid-signature';
           throw new Error('Invalid witness proof signature');
         }
 
@@ -292,6 +325,13 @@ export async function countVerifiedWitnessApprovals(
         processedWitnesses.add(witness.id);
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
+        rejectedProofs.push({
+          proofVersionId: proofSet.versionId,
+          proofIndex,
+          verificationMethod: proof.verificationMethod,
+          code,
+          message,
+        });
         console.warn(
           `Ignoring invalid witness proof for version ${proofSet.versionId} ` +
             `(verificationMethod: ${proof.verificationMethod}): ${message}`
@@ -300,7 +340,7 @@ export async function countVerifiedWitnessApprovals(
     }
   }
 
-  return approvals;
+  return { approvals, rejectedProofs };
 }
 
 export { fetchWitnessProofs };

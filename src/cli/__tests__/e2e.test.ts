@@ -70,7 +70,7 @@ function createTempVerificationMethod(vm: VerificationMethod): string {
   return tempFile;
 }
 
-describe('CLI End-to-End Tests', () => {
+describe('Controller CLI End-to-End Tests', () => {
   test('Create DID using CLI', async () => {
     const proc = runCli(['create', '--address', 'example.com', '--output', join(TEST_DIR, 'did.jsonl'), '--portable']);
     expect(proc.exitCode).toBe(0);
@@ -258,6 +258,122 @@ describe('CLI End-to-End Tests', () => {
     expect(proc.stdout).toContain('Resolved DID');
     expect(proc.stdout).toContain('DID Document');
     expect(proc.stdout).toContain('Metadata');
+  });
+
+  test('updates a witnessed DID using a local witness file', async () => {
+    const logFile = join(TEST_DIR, 'did-witnessed-update.jsonl');
+    const witnessFile = join(TEST_DIR, 'did-witnessed-update.json');
+    const witnessVmProc = runCli(['generate-vm']);
+    expect(witnessVmProc.exitCode).toBe(0);
+    const witnessVm = JSON.parse(witnessVmProc.stdout) as { did: string; secretKeyMultibase: string };
+
+    const createProc = runCli([
+      'create',
+      '--address',
+      'example.com',
+      '--output',
+      logFile,
+      '--portable',
+      '--witness',
+      witnessVm.did,
+    ]);
+    expect(createProc.exitCode).toBe(0);
+    const log = await readLogFromDisk(logFile);
+    const proofProc = runCli([
+      'generate-witness-proof',
+      '--version-id',
+      log[0].versionId,
+      '--witness-did',
+      witnessVm.did,
+      '--witness-secret',
+      witnessVm.secretKeyMultibase,
+      '--output',
+      witnessFile,
+    ]);
+    expect(proofProc.exitCode).toBe(0);
+
+    const updateProc = runCli(['update', '--log', logFile, '--output', logFile, '--witness-file', witnessFile]);
+    expect(updateProc.exitCode).toBe(0);
+    expect(await readLogFromDisk(logFile)).toHaveLength(2);
+  });
+
+  test('deactivates a witnessed DID using a local witness file', async () => {
+    const logFile = join(TEST_DIR, 'did-witnessed-deactivate.jsonl');
+    const witnessFile = join(TEST_DIR, 'did-witnessed-deactivate.json');
+    const witnessVmProc = runCli(['generate-vm']);
+    expect(witnessVmProc.exitCode).toBe(0);
+    const witnessVm = JSON.parse(witnessVmProc.stdout) as { did: string; secretKeyMultibase: string };
+
+    const createProc = runCli([
+      'create',
+      '--address',
+      'example.com',
+      '--output',
+      logFile,
+      '--portable',
+      '--witness',
+      witnessVm.did,
+    ]);
+    expect(createProc.exitCode).toBe(0);
+    const log = await readLogFromDisk(logFile);
+    const proofProc = runCli([
+      'generate-witness-proof',
+      '--version-id',
+      log[0].versionId,
+      '--witness-did',
+      witnessVm.did,
+      '--witness-secret',
+      witnessVm.secretKeyMultibase,
+      '--output',
+      witnessFile,
+    ]);
+    expect(proofProc.exitCode).toBe(0);
+
+    const deactivateProc = runCli(['deactivate', '--log', logFile, '--output', logFile, '--witness-file', witnessFile]);
+    expect(deactivateProc.exitCode).toBe(0);
+    const deactivatedLog = await readLogFromDisk(logFile);
+    expect(deactivatedLog).toHaveLength(2);
+    expect(deactivatedLog[1].parameters.deactivated).toBe(true);
+  });
+
+  test('Verify witnessed DID proofs using CLI', async () => {
+    const logFile = join(TEST_DIR, 'did-witnessed-verify.jsonl');
+    const witnessFile = join(TEST_DIR, 'did-witnessed-verify.json');
+    const witnessVmProc = runCli(['generate-vm']);
+    expect(witnessVmProc.exitCode).toBe(0);
+    const witnessVm = JSON.parse(witnessVmProc.stdout) as { did: string; secretKeyMultibase: string };
+
+    const createProc = runCli([
+      'create',
+      '--address',
+      'example.com',
+      '--output',
+      logFile,
+      '--portable',
+      '--witness',
+      witnessVm.did,
+    ]);
+    expect(createProc.exitCode).toBe(0);
+
+    const log = await readLogFromDisk(logFile);
+    const proofProc = runCli([
+      'generate-witness-proof',
+      '--version-id',
+      log[0].versionId,
+      '--witness-did',
+      witnessVm.did,
+      '--witness-secret',
+      witnessVm.secretKeyMultibase,
+      '--output',
+      witnessFile,
+    ]);
+    expect(proofProc.exitCode).toBe(0);
+
+    const verifyProc = runCli(['verify-proofs', '--log', logFile, '--witness-file', witnessFile]);
+    expect(verifyProc.exitCode).toBe(0);
+    const result = JSON.parse(verifyProc.stdout) as { verified: boolean; requirements: unknown[] };
+    expect(result.verified).toBe(true);
+    expect(result.requirements).toHaveLength(1);
   });
 });
 

@@ -130,7 +130,40 @@ The following commands are defined in the `package.json` file:
   pnpm cli
 ```
 
-The CLI accepts a `--watcher` option during create and update operations to specify one or more watcher URLs.
+The CLI accepts a `--watcher` option during create and update operations to specify one or more watcher URLs. Witnessed DID operations use the published witness proof file by default:
+
+```bash
+pnpm cli -- update --log ./did.jsonl --output ./updated-did.jsonl
+pnpm cli -- deactivate --log ./did.jsonl --output ./deactivated-did.jsonl
+```
+
+Pass `--witness-file` to use a local `did-witness.json` file instead:
+
+```bash
+pnpm cli -- update \
+  --log ./did.jsonl \
+  --output ./updated-did.jsonl \
+  --witness-file ./did-witness.json
+
+pnpm cli -- deactivate \
+  --log ./did.jsonl \
+  --output ./deactivated-did.jsonl \
+  --witness-file ./did-witness.json
+```
+
+When `--witness-file` is omitted, `update` and `deactivate` retain the normal network-fetch behavior. Providing a witness file avoids that fetch; an empty JSON array (`[]`) explicitly disables fetching and fails fast when witnesses are required.
+
+Use `verify-proofs` to inspect a local witness proof file before publishing or updating a DID:
+
+```bash
+pnpm cli -- verify-proofs \
+  --log ./did.jsonl \
+  --witness-file ./did-witness.json
+```
+
+The command prints the `verifyWitnessProofs` result as JSON, including per-entry
+approval counts and satisfaction status. It exits successfully when all witness
+thresholds are satisfied and exits with status `1` when they are not.
 
 1. `build`: Build the package.
 
@@ -189,7 +222,7 @@ For this to work, the `didwebvh-ts` package on npmjs.com must have a Trusted Pub
 
 Resolution follows the standard W3C [`did-resolver`](https://github.com/decentralized-identity/did-resolver) interface. `resolveDID` / `resolveDIDFromLog` return a `DIDResolutionResult` (`{ didResolutionMetadata, didDocument, didDocumentMetadata }`), and `getResolver()` produces a registry entry you can drop into a `did-resolver` `Resolver` alongside `did:web`, `did:ethr`, etc.
 
-#### Using the did-resolver interface
+### Using the did-resolver interface
 
 ```typescript
 import { Resolver } from 'did-resolver';
@@ -236,7 +269,13 @@ const result = await resolveDID(did, {
 The callback returns a `DIDLog` or `undefined`. Returning `undefined` uses the
 normal HTTPS fallback. Callback-supplied logs go through the same validation
 pipeline as remotely fetched logs. When explicit witness proofs are omitted,
-the runtime retrieves them from the specification-defined deterministic URL.
+`resolveDID`/`resolveDIDFromLog` retrieve them from the specification-defined
+deterministic URL.
+
+When `witnessProofs` is omitted (`undefined`), `resolveDID`, `resolveDIDFromLog`,
+`updateDID`, and `deactivateDID` use the normal specification-defined witness
+proof fetch. Pass `witnessProofs: []` explicitly to disable network fetching and fail fast when a witnessed log has no locally supplied proofs. Any non-empty
+explicit proof array is verified directly without fetching.
 
 The CLI owns environment variables, `.env` persistence, private-key selection,
 and its local log-file layout. `DID_VERIFICATION_METHODS` is therefore a CLI
@@ -302,6 +341,47 @@ Method-specific metadata (`scid`, `updateKeys`, `nextKeyHashes`, `prerotation`, 
 
 - `signWitnessProofEntries(versionIds: string[], witnesses: WitnessEntry[], witnessSignersByDid: Record<string, WitnessSigner>, created?: string): Promise<WitnessSigningResult[]>`
   Signs did-witness proof entries for multiple target versions.
+
+- `getWitnessRequirements(log: DIDLog): WitnessRequirement[]`
+  Derives the witness approvals required for each entry in a DID log that requires witnessing, by applying the did:webvh witness transition rules (genesis activation, inheritance, replacement, and removal). Synchronous, performs no network fetch, and requires no `Verifier`. Returns `[]` when the log has no active witness requirement.
+
+- `verifyWitnessProofs(log: DIDLog, witnessProofs: WitnessProofFileEntry[], options?: { verifier?: Verifier }): Promise<WitnessVerificationResult>`
+  Verifies every witness requirement in a DID log against the supplied `witnessProofs`, without any network fetch — proofs must be provided by the caller (e.g. proofs obtained for a proposed, not-yet-published log chain tip before it and its witness proofs are published). Returns `{ verified, requirements, rejectedProofs }`, reporting unmet thresholds as data (`verified: false`) rather than throwing. `rejectedProofs` contains structured, requirement-scoped diagnostics for proofs that were discarded, including a library-defined `code` such as `unknown-witness`, `duplicate-witness`, or `invalid-signature`, the proof entry/index, and the verification method. All other verification failures (hash chain, SCID, controller proof, etc.) still throw. These diagnostic codes are an API extension and are not additional did:webvh specification error codes.
+
+### Witness lifecycle sequence
+
+`createDID`, `updateDID`, and `deactivateDID` always return their normal, complete result — a proposed log chain tip is generated and returned regardless of whether any witness requirement is satisfied. Witness proofs are a separate artifact (`did-witness.json`) from the DID log (`did.jsonl`); collecting or verifying them never modifies the returned result.
+
+`getWitnessRequirements` tells the caller which approvals must be collected for a DID log. `verifyWitnessProofs` then checks a prospective proof file against that exact log: `verified: true` means the caller may proceed with the specification's publication order — it does **not** mean the library has published anything. The caller remains responsible for publishing `did-witness.json` before publishing the corresponding `did.jsonl` update.
+
+`result.meta.witness` describes the witness configuration active *after* the result is published; it must not be assumed to be the configuration that approves the transition into that result (see `getWitnessRequirements`, which derives the correct governing configuration per did:webvh's witness transition rules).
+
+```ts
+const result = await createDID(options);
+const requirements = getWitnessRequirements(result.log);
+
+if (requirements.length > 0) {
+  // Application-owned: collect signed witness proofs out-of-band (e.g. via a
+  // witness service or manual approval flow), not part of this library.
+  const prospectiveWitnessFile = await collectProofsOutsideTheLibrary(result, requirements);
+
+  const { verified } = await verifyWitnessProofs(result.log, prospectiveWitnessFile);
+  if (!verified) {
+    // Keep collecting proofs; this is expected, not an error.
+  }
+
+  // Application-owned: publish did-witness.json to its well-known location.
+  await callerPublishesWitnessFile(prospectiveWitnessFile);
+}
+
+// Application-owned: publish did.jsonl only after the witness file above.
+await callerPublishesDIDLog(result.log);
+```
+
+For `updateDID` and `deactivateDID`, omitting `witnessProofs` preserves normal
+proof retrieval. Pass `witnessProofs: []` when the caller intentionally wants
+network-free, fail-fast validation; pass an explicit proof array to validate
+against caller-supplied proofs.
 
 ### Cryptography Functions
 

@@ -21,6 +21,7 @@ import {
   resolveDIDFromLog,
   signWitnessProofEntries,
   updateDID,
+  verifyWitnessProofs,
 } from '../index.js';
 import { concatBuffers } from '../utils/buffer.js';
 import { canonicalizeStrict } from '../utils/canonicalize.js';
@@ -40,6 +41,7 @@ Usage: pnpm cli -- [command] [options]
 Commands:
   create     Create a new DID
   resolve    Resolve a DID
+  verify-proofs Verify witness proofs for a DID log
   update     Update an existing DID
   deactivate Deactivate an existing DID
   generate-witness-proof Generate witness proofs for a DID version
@@ -57,7 +59,7 @@ Options:
   --add-vm [type]           Add a verification method (type can be authentication, assertionMethod, keyAgreement, capabilityInvocation, capabilityDelegation)
   --also-known-as [alias]   Add an alsoKnownAs alias (can be used multiple times)
   --next-key-hash [hash]    Add a nextKeyHash (can be used multiple times)
-  --witness-file [file]     Path to witness proofs file (optional for resolve)
+  --witness-file [file]     Path to witness proofs file (optional for resolve, update, deactivate)
 
   # Options for generate-witness-proof:
   --version-id [id]         The version ID to generate proofs for (required, can be used multiple times)
@@ -71,6 +73,7 @@ Examples:
   pnpm cli -- create --address "did:webvh:example.com:3000" --portable
   pnpm cli -- resolve --did did:webvh:123456:example.com
   pnpm cli -- resolve --log ./did.jsonl --witness-file ./did-witness.json
+  pnpm cli -- verify-proofs --log ./did.jsonl --witness-file ./did-witness.json
   pnpm cli -- update --log ./did.jsonl --output ./updated-did.jsonl --add-vm keyAgreement --service LinkedDomains,https://example.com
   pnpm cli -- deactivate --log ./did.jsonl --output ./deactivated-did.jsonl
   pnpm cli -- generate-witness-proof --version-id 1-abc123 --witness-did did:key:z6Mk... --witness-secret z1A... --output did-witness.json
@@ -187,6 +190,11 @@ function getLocalDidLogPath(did: string): string | undefined {
   if (parts.length < 3 || parts[0] !== 'did' || parts[1] !== 'webvh') return undefined;
   const fileIdentifier = parts.slice(4).join(':');
   return `./src/routes/${fileIdentifier || '.well-known'}/did.jsonl`;
+}
+
+function readWitnessProofsFile(path: string | undefined): WitnessProofFileEntry[] | undefined {
+  if (!path) return undefined;
+  return JSON.parse(fs.readFileSync(path, 'utf8')) as WitnessProofFileEntry[];
 }
 
 async function resolveControlledDidFromEnv(did: string): Promise<DIDLog | undefined> {
@@ -343,10 +351,46 @@ export async function handleResolve(args: string[]) {
   }
 }
 
+export async function handleVerifyProofs(args: string[]) {
+  const options = parseOptions(args);
+  const logFile = options.log as string;
+  const witnessFile = options['witness-file'] as string | undefined;
+
+  if (!logFile) {
+    console.error('Log file is required for verify-proofs command');
+    process.exit(1);
+  }
+  if (!witnessFile) {
+    console.error('Witness file is required for verify-proofs command');
+    process.exit(1);
+  }
+
+  try {
+    const log = await readLogFromDisk(logFile);
+    const witnessProofs = readWitnessProofsFile(witnessFile);
+    if (!witnessProofs) {
+      throw new Error('Witness proofs could not be loaded');
+    }
+
+    const result = await verifyWitnessProofs(log, witnessProofs, {
+      verifier: createCustomCrypto(),
+    });
+    console.log(JSON.stringify(result, null, 2));
+    if (!result.verified) {
+      process.exitCode = 1;
+    }
+    return result;
+  } catch (error) {
+    console.error('Error verifying witness proofs:', error);
+    process.exit(1);
+  }
+}
+
 export async function handleUpdate(args: string[]) {
   const options = parseOptions(args);
   const logFile = options.log as string;
   const output = options.output as string | undefined;
+  const witnessProofs = readWitnessProofsFile(options['witness-file'] as string | undefined);
   const witnesses = options.witness as string[] | undefined;
   const witnessThreshold = options['witness-threshold']
     ? parseInt(options['witness-threshold'] as string, 10)
@@ -363,7 +407,10 @@ export async function handleUpdate(args: string[]) {
 
   try {
     const log = await readLogFromDisk(logFile);
-    const updateResolution = await resolveDIDFromLog(log, { verifier: createCustomCrypto() });
+    const updateResolution = await resolveDIDFromLog(log, {
+      verifier: createCustomCrypto(),
+      witnessProofs,
+    });
     if (updateResolution.didResolutionMetadata.error) {
       throw new Error(`Resolution failed: ${updateResolution.didResolutionMetadata.error}`);
     }
@@ -454,6 +501,7 @@ export async function handleUpdate(args: string[]) {
       watchers: watchers ?? undefined,
       services,
       alsoKnownAs,
+      witnessProofs,
     });
 
     if (output) {
@@ -472,6 +520,7 @@ export async function handleDeactivate(args: string[]) {
   const options = parseOptions(args);
   const logFile = options.log as string;
   const output = options.output as string | undefined;
+  const witnessProofs = readWitnessProofsFile(options['witness-file'] as string | undefined);
 
   if (!logFile) {
     throw new CliError('Log file is required for deactivate command');
@@ -480,7 +529,10 @@ export async function handleDeactivate(args: string[]) {
   try {
     // Read the current log to get the latest state
     const log = await readLogFromDisk(logFile);
-    const deactivateResolution = await resolveDIDFromLog(log, { verifier: createCustomCrypto() });
+    const deactivateResolution = await resolveDIDFromLog(log, {
+      verifier: createCustomCrypto(),
+      witnessProofs,
+    });
     if (deactivateResolution.didResolutionMetadata.error) {
       throw new Error(`Resolution failed: ${deactivateResolution.didResolutionMetadata.error}`);
     }
@@ -508,6 +560,7 @@ export async function handleDeactivate(args: string[]) {
       log,
       signer: crypto,
       verifier: crypto,
+      witnessProofs,
     });
 
     if (output) {
@@ -641,6 +694,9 @@ export async function main(): Promise<number> {
         return 0;
       case 'resolve':
         await handleResolve(args);
+        return 0;
+      case 'verify-proofs':
+        await handleVerifyProofs(args);
         return 0;
       case 'update':
         await handleUpdate(args);
