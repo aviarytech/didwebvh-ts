@@ -6,6 +6,7 @@ import type {
   DIDLog,
   Signer,
   VerificationMethod,
+  WitnessProofFileEntry,
 } from '../src/interfaces.js';
 import { createDID, deactivateDID, resolveDIDFromLog, updateDID } from '../src/method.js';
 import { deriveHash } from '../src/utils/crypto.js';
@@ -42,6 +43,16 @@ describe('Witness Implementation Tests', async () => {
 
   const witnessVerificationMethod = (vm: VerificationMethod) =>
     `did:key:${vm.publicKeyMultibase}#${vm.publicKeyMultibase}`;
+
+  const expectResolverRequirementsToMatch = async (log: DIDLog, witnessProofs: WitnessProofFileEntry[]) => {
+    const expected = getWitnessRequirements(log);
+    const result = await verifyWitnessProofs(log, witnessProofs, { verifier: testImplementation });
+
+    expect(result.verified).toBe(true);
+    expect(
+      result.requirements.map(({ approvals: _approvals, satisfied: _satisfied, ...requirement }) => requirement)
+    ).toEqual(expected);
+  };
 
   test('Create DID with witness threshold', async () => {
     initialDID = await createDID({
@@ -149,6 +160,7 @@ describe('Witness Implementation Tests', async () => {
         witnesses: [{ id: `did:key:${witness1.publicKeyMultibase}` }, { id: `did:key:${witness2.publicKeyMultibase}` }],
       },
     ]);
+    await expectResolverRequirementsToMatch(updatedDID.log, witnessProofs);
   });
 
   test('Resolve DID rejects duplicate witness IDs in witness parameters', async () => {
@@ -432,6 +444,7 @@ describe('Witness Implementation Tests', async () => {
       { id: `did:key:${witness1.publicKeyMultibase}` },
       { id: `did:key:${witness2.publicKeyMultibase}` },
     ]);
+    await expectResolverRequirementsToMatch(updatedDID.log, [...witnessProofs, ...newWitnessProofs]);
   });
 
   test('Disable witnessing by setting witness list to null', async () => {
@@ -475,6 +488,10 @@ describe('Witness Implementation Tests', async () => {
     expect(requirements[1].witnesses).toEqual([
       { id: `did:key:${witness1.publicKeyMultibase}` },
       { id: `did:key:${witness2.publicKeyMultibase}` },
+    ]);
+    await expectResolverRequirementsToMatch(updatedDID.log, [
+      ...witnessProofs,
+      { versionId: newVersionId, proof: deactivationProofs },
     ]);
   });
 

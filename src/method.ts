@@ -2,7 +2,7 @@ import type { DIDResolutionResult } from 'did-resolver';
 import { DEFAULT_TTL_SECONDS, SCID_PLACEHOLDER } from './constants.js';
 import { prepareDeactivationEntry, prepareGenesisEntry, prepareUpdateEntry } from './core/entries.js';
 import { resolveLog } from './core/resolution.js';
-import { computeWitnessRequirementChecks } from './core/witness-requirements.js';
+import { computeWitnessRequirementChecks, type WitnessCheckResult } from './core/witness-requirements.js';
 import { generateParallelDidWeb } from './did-document.js';
 import type {
   CreateDIDInterface,
@@ -326,34 +326,27 @@ export const verifyWitnessProofs = async (
   witnessProofs: WitnessProofFileEntry[],
   options: VerifyWitnessProofsOptions = {}
 ): Promise<WitnessVerificationResult> => {
-  const requirements = getWitnessRequirements(log);
-  let checkOutcomes: { targetVersionId: string; approvals: number; satisfied: boolean }[] = [];
+  let checkOutcomes: WitnessCheckResult[] = [];
 
   await resolveLog(log, {
     witnessProofs,
     verifier: options.verifier ?? defaultVerifier,
     onWitnessChecksComputed: (checks) => {
-      checkOutcomes = checks.map((check) => ({
-        targetVersionId: check.targetVersionId,
-        approvals: check.approvals,
-        satisfied: check.satisfied,
-      }));
+      checkOutcomes = checks;
     },
   });
 
-  const outcomesByVersionId = new Map(checkOutcomes.map((outcome) => [outcome.targetVersionId, outcome]));
-
-  const annotatedRequirements = requirements.map((requirement) => {
-    const outcome = outcomesByVersionId.get(requirement.versionId);
-    return {
-      ...requirement,
-      approvals: outcome?.approvals ?? 0,
-      satisfied: outcome?.satisfied ?? false,
-    };
-  });
+  const requirements = checkOutcomes.map((check) => ({
+    versionId: check.targetVersionId,
+    versionNumber: check.targetVersionNumber,
+    threshold: normalizeWitnessThreshold(check.witness.threshold),
+    witnesses: deepClone(check.witness.witnesses ?? []),
+    approvals: check.approvals,
+    satisfied: check.satisfied,
+  }));
 
   return {
-    verified: annotatedRequirements.every((requirement) => requirement.satisfied),
-    requirements: annotatedRequirements,
+    verified: requirements.every((requirement) => requirement.satisfied),
+    requirements,
   };
 };
