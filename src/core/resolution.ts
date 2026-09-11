@@ -634,7 +634,7 @@ const finalizeResolutionChecks = async ({
  * @param did The DID whose witness proof file should be fetched when needed.
  * @param logEntries The resolved log entries used to determine proof coverage.
  * @param verifier The verifier used to validate witness proofs.
- * @returns The computed approval and satisfaction result for each requirement.
+ * @returns The computed approval, satisfaction, and rejected-proof result for each requirement.
  */
 const evaluateRequiredWitnessChecks = async ({
   requiredWitnessChecks,
@@ -664,10 +664,18 @@ const evaluateRequiredWitnessChecks = async ({
       return proofVersionNumber !== undefined && proofVersionNumber >= check.targetVersionNumber;
     });
 
-    const approvals = await countVerifiedWitnessApprovals(candidateProofs, check.witness, verifier);
+    const { approvals, rejectedProofs } = await countVerifiedWitnessApprovals(candidateProofs, check.witness, verifier);
     const threshold = normalizeWitnessThreshold(check.witness.threshold);
     const satisfied = approvals >= threshold;
-    computedChecks.push({ ...check, approvals, satisfied });
+    computedChecks.push({
+      ...check,
+      approvals,
+      satisfied,
+      rejectedProofs: rejectedProofs.map((rejectedProof) => ({
+        ...rejectedProof,
+        requirementVersionId: check.targetVersionId,
+      })),
+    });
   }
 
   return computedChecks;

@@ -337,5 +337,6 @@ export const verifyWitnessProofs = async (
   return {
     verified: requirements.every((requirement) => requirement.satisfied),
     requirements,
+    rejectedProofs: checkOutcomes.flatMap((check) => check.rejectedProofs),
   };
 };

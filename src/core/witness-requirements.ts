@@ -1,4 +1,4 @@
-import type { DIDLog, DIDLogEntry, WitnessParameterResolution } from '../interfaces.js';
+import type { DIDLog, DIDLogEntry, WitnessParameterResolution, WitnessProofRejection } from '../interfaces.js';
 import { deepClone, parseAndValidateVersionId } from '../utils.js';
 import { hasActiveWitnessRequirement, resolveWitnessParameter, validateWitnessParameter } from '../witness.js';
 
@@ -17,6 +17,7 @@ export interface RequiredWitnessCheck {
 export interface WitnessCheckResult extends RequiredWitnessCheck {
   approvals: number;
   satisfied: boolean;
+  rejectedProofs: WitnessProofRejection[];
 }
 
 /**
