@@ -189,7 +189,7 @@ For this to work, the `didwebvh-ts` package on npmjs.com must have a Trusted Pub
 
 Resolution follows the standard W3C [`did-resolver`](https://github.com/decentralized-identity/did-resolver) interface. `resolveDID` / `resolveDIDFromLog` return a `DIDResolutionResult` (`{ didResolutionMetadata, didDocument, didDocumentMetadata }`), and `getResolver()` produces a registry entry you can drop into a `did-resolver` `Resolver` alongside `did:web`, `did:ethr`, etc.
 
-#### Using the did-resolver interface
+### Using the did-resolver interface
 
 ```typescript
 import { Resolver } from 'did-resolver';
