@@ -205,8 +205,9 @@ describe('Injectable Cryptography Tests', () => {
       ],
     };
 
-    const approvals = await countVerifiedWitnessApprovals(witnessProofs, witness, mockImplementation);
-    expect(approvals).toBe(1);
+    const result = await countVerifiedWitnessApprovals(witnessProofs, witness, mockImplementation);
+    expect(result.approvals).toBe(1);
+    expect(result.rejectedProofs).toEqual([]);
   });
 
   test('Count verified witness approvals logs and skips invalid proofs', async () => {
@@ -238,8 +239,9 @@ describe('Injectable Cryptography Tests', () => {
     };
 
     try {
-      const approvals = await countVerifiedWitnessApprovals(witnessProofs, witness, failingMockImplementation);
-      expect(approvals).toBe(0);
+      const result = await countVerifiedWitnessApprovals(witnessProofs, witness, failingMockImplementation);
+      expect(result.approvals).toBe(0);
+      expect(result.rejectedProofs).toHaveLength(1);
     } finally {
       console.warn = originalWarn;
     }

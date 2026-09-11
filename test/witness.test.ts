@@ -799,6 +799,68 @@ describe('Witness Implementation Tests', async () => {
       ]);
     });
 
+    test('returns structured diagnostics for rejected witness proofs', async () => {
+      const versionId = initialDID.log[0].versionId;
+      const validWitness1Proof = await createWitnessProof(
+        createWitnessSigner(witness1),
+        versionId,
+        witnessVerificationMethod(witness1)
+      );
+      const validWitness2Proof = await createWitnessProof(
+        createWitnessSigner(witness2),
+        versionId,
+        witnessVerificationMethod(witness2)
+      );
+      const invalidSignatureProof = {
+        ...validWitness2Proof,
+        proofValue: `${validWitness2Proof.proofValue.slice(0, -1)}1`,
+      };
+      const unknownWitnessProof = await createWitnessProof(
+        createWitnessSigner(witness3),
+        versionId,
+        witnessVerificationMethod(witness3)
+      );
+
+      const result = await verifyWitnessProofs(
+        initialDID.log,
+        [
+          {
+            versionId,
+            proof: [invalidSignatureProof, validWitness1Proof, validWitness1Proof, unknownWitnessProof],
+          },
+        ],
+        { verifier: testImplementation }
+      );
+
+      expect(result.verified).toBe(false);
+      expect(result.rejectedProofs).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            requirementVersionId: versionId,
+            proofVersionId: versionId,
+            proofIndex: 0,
+            verificationMethod: witnessVerificationMethod(witness2),
+            code: 'invalid-signature',
+          }),
+          expect.objectContaining({
+            requirementVersionId: versionId,
+            proofVersionId: versionId,
+            proofIndex: 2,
+            verificationMethod: witnessVerificationMethod(witness1),
+            code: 'duplicate-witness',
+          }),
+          expect.objectContaining({
+            requirementVersionId: versionId,
+            proofVersionId: versionId,
+            proofIndex: 3,
+            verificationMethod: witnessVerificationMethod(witness3),
+            code: 'unknown-witness',
+          }),
+        ])
+      );
+      expect(result.rejectedProofs).toHaveLength(3);
+    });
+
     test('Returns verified: false with a per-entry approval count when threshold is not met, without throwing', async () => {
       const witness1SignerFn = createWitnessSigner(witness1);
       const versionId = initialDID.log[0].versionId;
@@ -839,7 +901,7 @@ describe('Witness Implementation Tests', async () => {
 
       const result = await verifyWitnessProofs(noWitnessDID.log, [], { verifier: testImplementation });
 
-      expect(result).toEqual({ verified: true, requirements: [] });
+      expect(result).toEqual({ verified: true, requirements: [], rejectedProofs: [] });
     });
 
     test('Still throws for non-witness integrity failures, unmodified', async () => {
