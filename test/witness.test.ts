@@ -809,7 +809,7 @@ describe('Witness Implementation Tests', async () => {
       await expectResolverRequirementsToMatch(deactivated.log, cumulativeWitnessProofs);
     });
 
-    test('deactivateDID rejects when a witness is required but witnessProofs is omitted, without a network fetch', async () => {
+    test('deactivateDID rejects when a witness is required but witnessProofs is explicitly empty', async () => {
       const witnessDid = `did:key:${witness1.publicKeyMultibase}`;
       const genesisDid = await createDID({
         address: 'example.com',
@@ -828,6 +828,7 @@ describe('Witness Implementation Tests', async () => {
             log: genesisDid.log,
             signer: createTestSigner(authKey),
             verifier: testImplementation,
+            witnessProofs: [],
           })
         ).rejects.toThrow();
 
@@ -837,7 +838,7 @@ describe('Witness Implementation Tests', async () => {
       }
     });
 
-    test('updateDID rejects when a witness is required but witnessProofs is omitted, without a network fetch', async () => {
+    test('updateDID rejects when a witness is required but witnessProofs is explicitly empty', async () => {
       const witnessDid = `did:key:${witness1.publicKeyMultibase}`;
       const genesisDid = await createDID({
         address: 'example.com',
@@ -858,10 +859,41 @@ describe('Witness Implementation Tests', async () => {
             updateKeys: [authKey.publicKeyMultibase!],
             verificationMethods: asPublicVerificationMethods(authKey),
             verifier: testImplementation,
+            witnessProofs: [],
           })
         ).rejects.toThrow();
 
         expect(fetchSpy).not.toHaveBeenCalled();
+      } finally {
+        fetchSpy.mockRestore();
+      }
+    });
+
+    test('updateDID fetches witness proofs when witnessProofs is omitted', async () => {
+      const witnessDid = `did:key:${witness1.publicKeyMultibase}`;
+      const genesisDid = await createDID({
+        address: 'example.com',
+        signer: createTestSigner(authKey),
+        updateKeys: [authKey.publicKeyMultibase!],
+        verificationMethods: asPublicVerificationMethods(authKey),
+        witness: { threshold: 1, witnesses: [{ id: witnessDid }] },
+        verifier: testImplementation,
+      });
+
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('network fetch observed'));
+
+      try {
+        await expect(
+          updateDID({
+            log: genesisDid.log,
+            signer: createTestSigner(authKey),
+            updateKeys: [authKey.publicKeyMultibase!],
+            verificationMethods: asPublicVerificationMethods(authKey),
+            verifier: testImplementation,
+          })
+        ).rejects.toThrow();
+
+        expect(fetchSpy).toHaveBeenCalledWith('https://example.com/.well-known/did-witness.json');
       } finally {
         fetchSpy.mockRestore();
       }

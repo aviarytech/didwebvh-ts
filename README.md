@@ -239,12 +239,10 @@ pipeline as remotely fetched logs. When explicit witness proofs are omitted,
 `resolveDID`/`resolveDIDFromLog` retrieve them from the specification-defined
 deterministic URL.
 
-`updateDID` and `deactivateDID` never perform this network fetch: when
-`options.witnessProofs` is omitted, they pass `[]` rather than fetching, so a
-missing or insufficient proof set surfaces immediately as an unmet witness
-threshold instead of a network-dependent lookup. Callers that need witness
-verification for an update or deactivation must supply `witnessProofs`
-explicitly (see [Witness Functions](#witness-functions) below).
+When `witnessProofs` is omitted (`undefined`), `resolveDID`, `resolveDIDFromLog`,
+`updateDID`, and `deactivateDID` use the normal specification-defined witness
+proof fetch. Pass `witnessProofs: []` explicitly to disable network fetching and fail fast when a witnessed log has no locally supplied proofs. Any non-empty
+explicit proof array is verified directly without fetching.
 
 The CLI owns environment variables, `.env` persistence, private-key selection,
 and its local log-file layout. `DID_VERIFICATION_METHODS` is therefore a CLI
@@ -347,7 +345,10 @@ if (requirements.length > 0) {
 await callerPublishesDIDLog(result.log);
 ```
 
-`updateDID` and `deactivateDID` default `witnessProofs` to `[]` (never fetching) when the option is omitted, so an unmet witness threshold on those two methods surfaces immediately as an error rather than a network-dependent lookup — see [Runtime and CLI separation](#runtime-and-cli-separation).
+For `updateDID` and `deactivateDID`, omitting `witnessProofs` preserves normal
+proof retrieval. Pass `witnessProofs: []` when the caller intentionally wants
+network-free, fail-fast validation; pass an explicit proof array to validate
+against caller-supplied proofs.
 
 ### Cryptography Functions
 

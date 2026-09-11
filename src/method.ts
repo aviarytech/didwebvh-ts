@@ -198,10 +198,7 @@ export const resolveDIDFromLog = async (log: DIDLog, options: ResolutionOptions 
 export const updateDID = async (options: UpdateDIDInterface): Promise<UpdateDIDResult> => {
   const log = options.log;
   const lastEntry = log[log.length - 1];
-  // Default to an empty proof array so missing witnessProofs never falls back to network fetch.
-  // Unmet witness requirement surfaces as a thrown error below.
-  const lastMeta = (await resolveLog(log, { verifier: options.verifier, witnessProofs: options.witnessProofs ?? [] }))
-    .meta;
+  const lastMeta = (await resolveLog(log, { verifier: options.verifier, witnessProofs: options.witnessProofs })).meta;
   const currentUpdateKeys = options.updateKeys;
   if (lastMeta.deactivated) {
     throw new Error('Cannot update deactivated DID');
@@ -254,10 +251,7 @@ export const deactivateDID = async (
 ): Promise<{ did: string; doc: DIDDoc; meta: DIDResolutionMeta; log: DIDLog }> => {
   const log = options.log;
   const lastEntry = log[log.length - 1];
-  // Default to an empty proof array so missing witnessProofs never falls back to network fetch.
-  // Unmet witness requirement surfaces as a thrown error below.
-  const lastMeta = (await resolveLog(log, { verifier: options.verifier, witnessProofs: options.witnessProofs ?? [] }))
-    .meta;
+  const lastMeta = (await resolveLog(log, { verifier: options.verifier, witnessProofs: options.witnessProofs })).meta;
   if (lastMeta.deactivated) {
     throw new Error('DID already deactivated');
   }
