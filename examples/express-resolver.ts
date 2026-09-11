@@ -8,11 +8,11 @@ class ExpressVerifier implements Verifier {
   private verificationMethodId: string;
   private publicKey: Uint8Array;
 
-  constructor(keyId: string, verificationMethodId: string) {
+  constructor(_keyId: string, verificationMethodId: string) {
     this.verificationMethodId = verificationMethodId;
   }
 
-  async sign(input: SigningInput): Promise<SigningOutput> {
+  async sign(_input: SigningInput): Promise<SigningOutput> {
     throw new Error('Not implemented');
   }
 
@@ -124,7 +124,7 @@ const getFile = async ({
   }
 };
 
-app.get('/health', (req, res) => {
+app.get('/health', (_req, res) => {
   res.send('ok');
 });
 

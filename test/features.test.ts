@@ -1,14 +1,14 @@
 import { beforeAll, expect, test } from 'vitest';
-import type { CreateDIDResult, DIDLog, DIDLogEntry, ServiceEndpoint, VerificationMethod } from '../src/interfaces';
-import { createDID, deactivateDID, resolveDIDFromLog, updateDID } from '../src/method';
-import { deriveHash, deriveNextKeyHash } from '../src/utils/crypto';
-import { createDate } from '../src/utils/iso8601-datetime';
+import type { CreateDIDResult, DIDLog, DIDLogEntry, ServiceEndpoint, VerificationMethod } from '../src/interfaces.js';
+import { createDID, deactivateDID, resolveDIDFromLog, updateDID } from '../src/method.js';
+import { deriveHash, deriveNextKeyHash } from '../src/utils/crypto.js';
+import { createDate } from '../src/utils/iso8601-datetime.js';
 import {
   asPublicVerificationMethods,
   createTestSigner,
   generateTestVerificationMethod,
   TestCryptoImplementation,
-} from './utils';
+} from './utils.js';
 
 let log: DIDLog;
 let authKey1: VerificationMethod,

@@ -17,7 +17,7 @@ import {
   createWitnessProof,
   signWitnessProofEntries,
   signWitnessProofEntry,
-} from '../src/witness';
+} from '../src/witness.js';
 import {
   asPublicVerificationMethods,
   buildV05Genesis,
@@ -25,7 +25,7 @@ import {
   createTestVerifier,
   generateTestVerificationMethod,
   TestCryptoImplementation,
-} from './utils';
+} from './utils.js';
 
 describe('Witness Implementation Tests', async () => {
   let authKey: VerificationMethod;

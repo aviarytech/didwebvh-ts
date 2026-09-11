@@ -1,8 +1,8 @@
 import { beforeAll, describe, expect, test } from 'vitest';
-import { resolveLog } from '../src/core/resolution';
-import type { CreateDIDInterface, CreateDIDResult, DIDLog, VerificationMethod } from '../src/interfaces';
-import { createDID, deactivateDID, resolveDIDFromLog, updateDID } from '../src/method';
-import { createMultihash, encodeBase58Btc, MultihashAlgorithm } from '../src/utils/multiformats';
+import { resolveLog } from '../src/core/resolution.js';
+import type { CreateDIDInterface, CreateDIDResult, DIDLog, VerificationMethod } from '../src/interfaces.js';
+import { createDID, deactivateDID, resolveDIDFromLog, updateDID } from '../src/method.js';
+import { createMultihash, encodeBase58Btc, MultihashAlgorithm } from '../src/utils/multiformats.js';
 import {
   appendV05LogEntry,
   asPublicVerificationMethods,
@@ -10,7 +10,7 @@ import {
   createTestSigner,
   generateTestVerificationMethod,
   TestCryptoImplementation,
-} from './utils';
+} from './utils.js';
 
 describe('Not So Happy Path Tests', () => {
   let authKey: VerificationMethod;

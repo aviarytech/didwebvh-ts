@@ -1,12 +1,12 @@
 import { describe, expect, test } from 'vitest';
-import type { DIDResolutionMeta } from '../src/interfaces';
+import type { DIDResolutionMeta } from '../src/interfaces.js';
 import {
   mapErrorToCode,
   toErrorResult,
   toResolutionResult,
   validateSingleVersionSelector,
   WEBVH_ERROR_TYPES,
-} from '../src/resolver-result';
+} from '../src/resolver-result.js';
 
 const baseMeta: DIDResolutionMeta = {
   versionId: '1-abc',

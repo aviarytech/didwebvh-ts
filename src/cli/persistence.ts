@@ -1,5 +1,5 @@
 import { base64 } from '@scure/base';
-import type { DIDLog, VerificationMethod } from '../interfaces';
+import type { DIDLog, VerificationMethod } from '../interfaces.js';
 
 type ProcessVersionsLike = { node?: string };
 

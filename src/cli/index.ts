@@ -13,19 +13,26 @@ import type {
   VerificationMethod,
   Verifier,
   WitnessProofFileEntry,
-} from '../index';
-import { createDID, deactivateDID, resolveDID, resolveDIDFromLog, signWitnessProofEntries, updateDID } from '../index';
-import { concatBuffers } from '../utils/buffer';
-import { canonicalizeStrict } from '../utils/canonicalize';
-import { createHash } from '../utils/crypto';
-import { MultibaseEncoding, multibaseDecode, multibaseEncode } from '../utils/multiformats';
-import { parseDidKeyDid } from '../utils/verification-methods';
+} from '../index.js';
+import {
+  createDID,
+  deactivateDID,
+  resolveDID,
+  resolveDIDFromLog,
+  signWitnessProofEntries,
+  updateDID,
+} from '../index.js';
+import { concatBuffers } from '../utils/buffer.js';
+import { canonicalizeStrict } from '../utils/canonicalize.js';
+import { createHash } from '../utils/crypto.js';
+import { MultibaseEncoding, multibaseDecode, multibaseEncode } from '../utils/multiformats.js';
+import { parseDidKeyDid } from '../utils/verification-methods.js';
 import {
   getVerificationMethodsFromEnv,
   readLogFromDisk,
   writeLogToDisk,
   writeVerificationMethodToEnv,
-} from './persistence';
+} from './persistence.js';
 
 const usage = `
 Usage: pnpm cli -- [command] [options]

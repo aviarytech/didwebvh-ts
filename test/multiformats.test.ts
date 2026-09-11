@@ -10,7 +10,7 @@ import {
   MultihashAlgorithm,
   multibaseDecode,
   multibaseEncode,
-} from '../src/utils/multiformats';
+} from '../src/utils/multiformats.js';
 
 describe('base58btc', () => {
   test('round-trips binary data, preserving leading zero bytes', () => {

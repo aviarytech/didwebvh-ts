@@ -1,14 +1,14 @@
 import { Resolver } from 'did-resolver';
 import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
-import type { DIDLog, VerificationMethod } from '../src/interfaces';
-import { createDID, deactivateDID, updateDID } from '../src/method';
-import { getResolver } from '../src/resolver';
+import type { DIDLog, VerificationMethod } from '../src/interfaces.js';
+import { createDID, deactivateDID, updateDID } from '../src/method.js';
+import { getResolver } from '../src/resolver.js';
 import {
   asPublicVerificationMethods,
   createTestSigner,
   generateTestVerificationMethod,
   TestCryptoImplementation,
-} from './utils';
+} from './utils.js';
 
 const toJsonl = (log: DIDLog) => log.map((entry) => JSON.stringify(entry)).join('\n');
 

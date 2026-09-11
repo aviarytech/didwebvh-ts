@@ -1,8 +1,8 @@
 import { readFile } from 'node:fs/promises';
 import { ed25519 } from '@noble/curves/ed25519.js';
 import { Elysia } from 'elysia';
-import { AbstractCrypto, resolveDID } from '../src';
-import type { DIDDoc, SigningInput, SigningOutput, Verifier } from '../src/types';
+import { AbstractCrypto, resolveDID } from '../src/index.js';
+import type { DIDDoc, SigningInput, SigningOutput, Verifier } from '../src/types.js';
 
 class ElysiaVerifier extends AbstractCrypto implements Verifier {
   constructor(
@@ -17,7 +17,7 @@ class ElysiaVerifier extends AbstractCrypto implements Verifier {
     super({ verificationMethod });
   }
 
-  async sign(input: SigningInput): Promise<SigningOutput> {
+  async sign(_input: SigningInput): Promise<SigningOutput> {
     throw new Error('Not implemented');
   }
 
