@@ -44,11 +44,11 @@
     "@biomejs/biome": "^2.5.13",
     "@stablelib/ed25519": "^2.1.0",
     "@types/node": "^24.13.4",
-    "@vitest/coverage-v8": "^4.1.11",
+    "@vitest/coverage-v8": "^5.0.0",
     "esbuild": "^0.28.2",
     "tsx": "^4.23.13",
     "typescript": "^7.0.2",
-    "vitest": "^4.1.11"
+    "vitest": "^5.0.0"
   },
   "dependencies": {
     "@noble/curves": "^2.4.0",
