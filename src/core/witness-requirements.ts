@@ -1,6 +1,6 @@
-import type { DIDLog, DIDLogEntry, WitnessParameterResolution } from '../interfaces';
-import { deepClone, parseAndValidateVersionId } from '../utils';
-import { hasActiveWitnessRequirement, resolveWitnessParameter, validateWitnessParameter } from '../witness';
+import type { DIDLog, DIDLogEntry, WitnessParameterResolution } from '../interfaces.js';
+import { deepClone, parseAndValidateVersionId } from '../utils.js';
+import { hasActiveWitnessRequirement, resolveWitnessParameter, validateWitnessParameter } from '../witness.js';
 
 export interface RequiredWitnessCheck {
   targetVersionId: string;

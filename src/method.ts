@@ -1,9 +1,9 @@
 import type { DIDResolutionResult } from 'did-resolver';
-import { DEFAULT_TTL_SECONDS, SCID_PLACEHOLDER } from './constants';
-import { prepareDeactivationEntry, prepareGenesisEntry, prepareUpdateEntry } from './core/entries';
-import { resolveLog } from './core/resolution';
-import { computeWitnessRequirementChecks } from './core/witness-requirements';
-import { generateParallelDidWeb } from './did-document';
+import { DEFAULT_TTL_SECONDS, SCID_PLACEHOLDER } from './constants.js';
+import { prepareDeactivationEntry, prepareGenesisEntry, prepareUpdateEntry } from './core/entries.js';
+import { resolveLog } from './core/resolution.js';
+import { computeWitnessRequirementChecks } from './core/witness-requirements.js';
+import { generateParallelDidWeb } from './did-document.js';
 import type {
   CreateDIDInterface,
   CreateDIDResult,
@@ -20,23 +20,23 @@ import type {
   WitnessRequirement,
   WitnessVerifiableResult,
   WitnessVerificationResult,
-} from './interfaces';
-import { mapErrorToCode, toErrorResult, toResolutionResult, validateSingleVersionSelector } from './resolver-result';
+} from './interfaces.js';
+import { mapErrorToCode, toErrorResult, toResolutionResult, validateSingleVersionSelector } from './resolver-result.js';
+import {
+  createDate,
+  createNextVersionTime,
+  MAX_FUTURE_SKEW_MS,
+  validateUtcIso8601NotInFuture,
+} from './utils/iso8601-datetime.js';
 import {
   deepClone,
   fetchLogFromIdentifier,
   normalizeDidAddress,
   parseDidWebvhIdentifier,
   requireDidDocumentId,
-} from './utils';
-import {
-  createDate,
-  createNextVersionTime,
-  MAX_FUTURE_SKEW_MS,
-  validateUtcIso8601NotInFuture,
-} from './utils/iso8601-datetime';
-import { defaultVerifier } from './verifier';
-import { normalizeWitnessThreshold, resolveWitnessParameter, validateWitnessParameter } from './witness';
+} from './utils.js';
+import { defaultVerifier } from './verifier.js';
+import { normalizeWitnessThreshold, resolveWitnessParameter, validateWitnessParameter } from './witness.js';
 
 const buildMetaFromEntry = (entry: DIDLogEntry): DIDResolutionMeta => {
   const resolvedWitness = resolveWitnessParameter(entry.parameters);

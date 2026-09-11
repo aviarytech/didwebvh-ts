@@ -1,17 +1,17 @@
 import { beforeAll, describe, expect, test, vi } from 'vitest';
-import { getWitnessRequirements, verifyWitnessProofs } from '../src';
-import { computeWitnessRequirementChecks } from '../src/core/witness-requirements';
+import { computeWitnessRequirementChecks } from '../src/core/witness-requirements.js';
+import { getWitnessRequirements, verifyWitnessProofs } from '../src/index.js';
 import type {
   CreateDIDResult,
   DataIntegrityProofTemplate,
   DIDLog,
   Signer,
   VerificationMethod,
-} from '../src/interfaces';
-import { createDID, deactivateDID, resolveDIDFromLog, updateDID } from '../src/method';
-import { deriveHash } from '../src/utils/crypto';
-import { MultibaseEncoding, multibaseEncode } from '../src/utils/multiformats';
-import { parseDidKeyDid, parseDidKeyVerificationMethod } from '../src/utils/verification-methods';
+} from '../src/interfaces.js';
+import { createDID, deactivateDID, resolveDIDFromLog, updateDID } from '../src/method.js';
+import { deriveHash } from '../src/utils/crypto.js';
+import { MultibaseEncoding, multibaseEncode } from '../src/utils/multiformats.js';
+import { parseDidKeyDid, parseDidKeyVerificationMethod } from '../src/utils/verification-methods.js';
 import {
   countWitnessApprovals,
   createWitnessProof,

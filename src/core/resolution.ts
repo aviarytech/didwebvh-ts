@@ -31,8 +31,12 @@ import {
   normalizeWitnessThreshold,
   resolveWitnessParameter,
   validateWitnessParameter,
-} from '../witness';
-import { getRequiredWitnessForEntry, type RequiredWitnessCheck, type WitnessCheckResult } from './witness-requirements';
+} from '../witness.js';
+import {
+  getRequiredWitnessForEntry,
+  type RequiredWitnessCheck,
+  type WitnessCheckResult,
+} from './witness-requirements.js';
 
 const hasOwn = <K extends PropertyKey>(obj: object, key: K): obj is Record<K, unknown> => Object.hasOwn(obj, key);
 
