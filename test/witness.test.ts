@@ -141,7 +141,7 @@ describe('Witness Implementation Tests', async () => {
 
     // getWitnessRequirements agrees: first activation is governed by the new
     // configuration on the same (v2) entry.
-    expect(getWitnessRequirements(updatedDID)).toEqual([
+    expect(getWitnessRequirements(updatedDID.log)).toEqual([
       {
         versionId: newVersionId,
         versionNumber: 2,
@@ -425,7 +425,7 @@ describe('Witness Implementation Tests', async () => {
 
     // getWitnessRequirements agrees: the replacing entry (v2) is governed by the
     // previous list (witness1 + witness2), not the new one.
-    const requirements = getWitnessRequirements(updatedDID);
+    const requirements = getWitnessRequirements(updatedDID.log);
     expect(requirements[1].versionId).toBe(newVersionId);
     expect(requirements[1].threshold).toBe(2);
     expect(requirements[1].witnesses).toEqual([
@@ -469,7 +469,7 @@ describe('Witness Implementation Tests', async () => {
 
     // getWitnessRequirements agrees: the turn-off entry (v2) is still governed by
     // the previously active list.
-    const requirements = getWitnessRequirements(updatedDID);
+    const requirements = getWitnessRequirements(updatedDID.log);
     expect(requirements[1].versionId).toBe(newVersionId);
     expect(requirements[1].threshold).toBe(2);
     expect(requirements[1].witnesses).toEqual([
@@ -488,11 +488,11 @@ describe('Witness Implementation Tests', async () => {
         verifier: testImplementation,
       });
 
-      expect(getWitnessRequirements(noWitnessDID)).toEqual([]);
+      expect(getWitnessRequirements(noWitnessDID.log)).toEqual([]);
     });
 
     test('Genesis with witnesses returns versionId, normalized threshold, and witness list', async () => {
-      const requirements = getWitnessRequirements(initialDID);
+      const requirements = getWitnessRequirements(initialDID.log);
 
       expect(requirements).toEqual([
         {
@@ -508,19 +508,19 @@ describe('Witness Implementation Tests', async () => {
     });
 
     test('Returns defensive copies that callers cannot use to mutate internal state', async () => {
-      const requirements = getWitnessRequirements(initialDID);
+      const requirements = getWitnessRequirements(initialDID.log);
       const originalWitnesses = JSON.parse(JSON.stringify(requirements[0].witnesses));
 
       requirements[0].witnesses.push({ id: 'did:key:zTamperedWitness' });
       requirements[0].threshold = 999;
 
-      const requirementsAgain = getWitnessRequirements(initialDID);
+      const requirementsAgain = getWitnessRequirements(initialDID.log);
       expect(requirementsAgain[0].witnesses).toEqual(originalWitnesses);
       expect(requirementsAgain[0].threshold).toBe(2);
     });
 
     test('Agrees with the resolver-derived requirements for the same log', async () => {
-      const requirements = getWitnessRequirements(initialDID);
+      const requirements = getWitnessRequirements(initialDID.log);
       const versionId = initialDID.log[0].versionId;
       const witnessProofs = [
         {
@@ -531,7 +531,7 @@ describe('Witness Implementation Tests', async () => {
           ]),
         },
       ];
-      const resolved = await verifyWitnessProofs(initialDID, witnessProofs, { verifier: testImplementation });
+      const resolved = await verifyWitnessProofs(initialDID.log, witnessProofs, { verifier: testImplementation });
 
       expect(resolved.verified).toBe(true);
       expect(resolved.requirements).toEqual(
@@ -560,7 +560,7 @@ describe('Witness Implementation Tests', async () => {
         },
       ];
 
-      const result = await verifyWitnessProofs(initialDID, witnessProofs, { verifier: testImplementation });
+      const result = await verifyWitnessProofs(initialDID.log, witnessProofs, { verifier: testImplementation });
 
       expect(result.verified).toBe(true);
       expect(result.requirements).toEqual([
@@ -589,7 +589,7 @@ describe('Witness Implementation Tests', async () => {
         },
       ];
 
-      const result = await verifyWitnessProofs(initialDID, witnessProofs, { verifier: testImplementation });
+      const result = await verifyWitnessProofs(initialDID.log, witnessProofs, { verifier: testImplementation });
 
       expect(result.verified).toBe(false);
       expect(result.requirements).toEqual([
@@ -616,7 +616,7 @@ describe('Witness Implementation Tests', async () => {
         verifier: testImplementation,
       });
 
-      const result = await verifyWitnessProofs(noWitnessDID, [], { verifier: testImplementation });
+      const result = await verifyWitnessProofs(noWitnessDID.log, [], { verifier: testImplementation });
 
       expect(result).toEqual({ verified: true, requirements: [] });
     });
@@ -625,7 +625,7 @@ describe('Witness Implementation Tests', async () => {
       const tamperedLog: DIDLog = JSON.parse(JSON.stringify(initialDID.log));
       tamperedLog[0].parameters.scid = 'tampered-scid';
 
-      await expect(verifyWitnessProofs({ log: tamperedLog }, [], { verifier: testImplementation })).rejects.toThrow();
+      await expect(verifyWitnessProofs(tamperedLog, [], { verifier: testImplementation })).rejects.toThrow();
     });
 
     test('Verifies a proposed chain-tip update using a single cumulative proof for a 3-entry log', async () => {
@@ -700,7 +700,9 @@ describe('Witness Implementation Tests', async () => {
         },
       ];
 
-      const result = await verifyWitnessProofs(proposedV3, cumulativeWitnessProofs, { verifier: testImplementation });
+      const result = await verifyWitnessProofs(proposedV3.log, cumulativeWitnessProofs, {
+        verifier: testImplementation,
+      });
 
       expect(result.verified).toBe(true);
       expect(result.requirements.length).toBeGreaterThanOrEqual(1);
@@ -764,7 +766,9 @@ describe('Witness Implementation Tests', async () => {
         },
       ];
 
-      const result = await verifyWitnessProofs(deactivated, cumulativeWitnessProofs, { verifier: testImplementation });
+      const result = await verifyWitnessProofs(deactivated.log, cumulativeWitnessProofs, {
+        verifier: testImplementation,
+      });
 
       expect(result.verified).toBe(true);
       expect(result.requirements).toEqual([
@@ -1191,7 +1195,7 @@ describe('Witness Implementation Tests', async () => {
 
     // getWitnessRequirements agrees: the inherited config (witnessDid, threshold 1) also
     // governs v2, not just v1.
-    const requirements = getWitnessRequirements(updatedDid);
+    const requirements = getWitnessRequirements(updatedDid.log);
     expect(requirements).toEqual([
       {
         versionId: didWithWitness.log[0].versionId,

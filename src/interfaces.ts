@@ -273,14 +273,6 @@ export interface WitnessProofFileEntry {
 }
 
 /**
- * Common structural input accepted by the witness verification APIs.
- * Compatible with any method exposing `log: DIDLog`.
- */
-export interface WitnessVerifiableResult {
-  log: DIDLog;
-}
-
-/**
  * The witness configuration that governs approval of one DID log entry,
  * derived by applying the did:webvh witness transition rules rather than
  * read directly from final resolved metadata.

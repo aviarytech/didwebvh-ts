@@ -311,30 +311,30 @@ Method-specific metadata (`scid`, `updateKeys`, `nextKeyHashes`, `prerotation`, 
 - `signWitnessProofEntries(versionIds: string[], witnesses: WitnessEntry[], witnessSignersByDid: Record<string, WitnessSigner>, created?: string): Promise<WitnessSigningResult[]>`
   Signs did-witness proof entries for multiple target versions.
 
-- `getWitnessRequirements(result: { log: DIDLog }): WitnessRequirement[]`
-  Derives the witness approvals required for each entry in a DID log that requires witnessing, by applying the did:webvh witness transition rules (genesis activation, inheritance, replacement, and removal). Synchronous, performs no network fetch, and requires no `Verifier`. Accepts any object with a `log: DIDLog` property, so a `CreateDIDResult`/`UpdateDIDResult`/`DIDResolutionResult`-shaped value can be passed directly. Returns `[]` when the log has no active witness requirement.
+- `getWitnessRequirements(log: DIDLog): WitnessRequirement[]`
+  Derives the witness approvals required for each entry in a DID log that requires witnessing, by applying the did:webvh witness transition rules (genesis activation, inheritance, replacement, and removal). Synchronous, performs no network fetch, and requires no `Verifier`. Returns `[]` when the log has no active witness requirement.
 
-- `verifyWitnessProofs(result: { log: DIDLog }, witnessProofs: WitnessProofFileEntry[], options?: { verifier?: Verifier }): Promise<WitnessVerificationResult>`
+- `verifyWitnessProofs(log: DIDLog, witnessProofs: WitnessProofFileEntry[], options?: { verifier?: Verifier }): Promise<WitnessVerificationResult>`
   Verifies every witness requirement in a DID log against the supplied `witnessProofs`, without any network fetch — proofs must be provided by the caller (e.g. proofs obtained for a proposed, not-yet-published log chain tip before it and its witness proofs are published). Returns `{ verified: boolean, requirements: (WitnessRequirement & { approvals: number, satisfied: boolean })[] }`, reporting an unmet threshold as data (`verified: false`) rather than throwing. All other verification failures (hash chain, SCID, controller proof, etc.) still throw.
 
 ### Witness lifecycle sequence
 
 `createDID`, `updateDID`, and `deactivateDID` always return their normal, complete result — a proposed log chain tip is generated and returned regardless of whether any witness requirement is satisfied. Witness proofs are a separate artifact (`did-witness.json`) from the DID log (`did.jsonl`); collecting or verifying them never modifies the returned result.
 
-`getWitnessRequirements` tells the caller which approvals must be collected for the returned log. `verifyWitnessProofs` then checks a prospective proof file against that exact result: `verified: true` means the caller may proceed with the specification's publication order — it does **not** mean the library has published anything. The caller remains responsible for publishing `did-witness.json` before publishing the corresponding `did.jsonl` update.
+`getWitnessRequirements` tells the caller which approvals must be collected for a DID log. `verifyWitnessProofs` then checks a prospective proof file against that exact log: `verified: true` means the caller may proceed with the specification's publication order — it does **not** mean the library has published anything. The caller remains responsible for publishing `did-witness.json` before publishing the corresponding `did.jsonl` update.
 
 `result.meta.witness` describes the witness configuration active *after* the result is published; it must not be assumed to be the configuration that approves the transition into that result (see `getWitnessRequirements`, which derives the correct governing configuration per did:webvh's witness transition rules).
 
 ```ts
 const result = await createDID(options);
-const requirements = getWitnessRequirements(result);
+const requirements = getWitnessRequirements(result.log);
 
 if (requirements.length > 0) {
   // Application-owned: collect signed witness proofs out-of-band (e.g. via a
   // witness service or manual approval flow), not part of this library.
   const prospectiveWitnessFile = await collectProofsOutsideTheLibrary(result, requirements);
 
-  const { verified } = await verifyWitnessProofs(result, prospectiveWitnessFile);
+  const { verified } = await verifyWitnessProofs(result.log, prospectiveWitnessFile);
   if (!verified) {
     // Keep collecting proofs; this is expected, not an error.
   }

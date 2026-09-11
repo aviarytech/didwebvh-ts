@@ -18,7 +18,6 @@ import type {
   VerifyWitnessProofsOptions,
   WitnessProofFileEntry,
   WitnessRequirement,
-  WitnessVerifiableResult,
   WitnessVerificationResult,
 } from './interfaces.js';
 import { mapErrorToCode, toErrorResult, toResolutionResult, validateSingleVersionSelector } from './resolver-result.js';
@@ -298,11 +297,11 @@ export const deactivateDID = async (
 /**
  * Derives the witness approvals required for each entry in a DID log that requires witnessing.
  *
- * @param result A created, updated, or resolved DID result containing the log to inspect.
+ * @param log The DID log to inspect.
  * @returns The witness requirements for each entry that requires witnessing.
  */
-export const getWitnessRequirements = (result: WitnessVerifiableResult): WitnessRequirement[] => {
-  const checks = computeWitnessRequirementChecks(result.log);
+export const getWitnessRequirements = (log: DIDLog): WitnessRequirement[] => {
+  const checks = computeWitnessRequirementChecks(log);
 
   return checks.map((check) => ({
     versionId: check.targetVersionId,
@@ -316,21 +315,21 @@ export const getWitnessRequirements = (result: WitnessVerifiableResult): Witness
  * Verifies that every witness requirement in a DID log is satisfied by the locally supplied
  * witness proofs without network fetch.
  *
- * @param result A created, updated, or resolved DID result containing the log to verify.
+ * @param log The DID log to verify.
  * @param witnessProofs The witness proofs to verify against the log, in place of a network fetch.
  * @param options Optional verifier override.
  * @returns Per-entry witness requirements annotated with counted approvals and satisfaction.
  * @throws If the log or supplied proofs fail any non-witness-threshold verification.
  */
 export const verifyWitnessProofs = async (
-  result: WitnessVerifiableResult,
+  log: DIDLog,
   witnessProofs: WitnessProofFileEntry[],
   options: VerifyWitnessProofsOptions = {}
 ): Promise<WitnessVerificationResult> => {
-  const requirements = getWitnessRequirements(result);
+  const requirements = getWitnessRequirements(log);
   let checkOutcomes: { targetVersionId: string; approvals: number; satisfied: boolean }[] = [];
 
-  await resolveLog(result.log, {
+  await resolveLog(log, {
     witnessProofs,
     verifier: options.verifier ?? defaultVerifier,
     onWitnessChecksComputed: (checks) => {
