@@ -13,7 +13,6 @@ import type {
   DIDLogEntry,
   DIDResolutionMeta,
   ResolutionOptions,
-  WitnessParameterResolution,
   WitnessProofFileEntry,
 } from '../interfaces.js';
 import { buildProblemDetails } from '../resolver-result.js';
@@ -29,19 +28,17 @@ import {
 import {
   countVerifiedWitnessApprovals,
   fetchWitnessProofs,
-  hasActiveWitnessRequirement,
   normalizeWitnessThreshold,
   resolveWitnessParameter,
   validateWitnessParameter,
 } from '../witness.js';
+import {
+  getRequiredWitnessForEntry,
+  type RequiredWitnessCheck,
+  type WitnessCheckResult,
+} from './witness-requirements.js';
 
 const hasOwn = <K extends PropertyKey>(obj: object, key: K): obj is Record<K, unknown> => Object.hasOwn(obj, key);
-
-interface RequiredWitnessCheck {
-  targetVersionId: string;
-  targetVersionNumber: number;
-  witness: WitnessParameterResolution;
-}
 
 interface ResolutionSnapshot {
   did: string;
@@ -58,8 +55,8 @@ interface ResolverContext {
   resolvedSnapshot: ResolutionSnapshot | null;
   lastValidSnapshot: ResolutionSnapshot | null;
   requiredWitnessChecks: RequiredWitnessCheck[];
+  witnessChecks?: WitnessCheckResult[];
   didIdMatchCount: number;
-  witnessThresholdFailure: boolean;
 }
 
 interface ParsedResolutionEntryContext {
@@ -83,10 +80,46 @@ type InternalResolutionOptions = ResolutionOptions & {
   requestedDid?: string;
 };
 
+/**
+ * Resolves a DID log and enforces every applicable witness threshold.
+ *
+ * @param log The DID log to resolve.
+ * @param options Internal resolution options, including verifier and witness proofs.
+ * @returns The resolved DID, document, and metadata.
+ * @throws If the log is invalid or an applicable witness threshold is not met.
+ */
 export const resolveLog = async (
   log: DIDLog,
   options: InternalResolutionOptions = {}
 ): Promise<{ did: string; doc: DIDDoc | null; meta: DIDResolutionMeta }> => {
+  const { result, witnessChecks } = await resolveLogWithWitnessResults(log, options);
+  const failedCheck = witnessChecks.find((check) => !check.satisfied);
+  if (failedCheck) {
+    throw new Error(
+      `Witness threshold not met for version ${failedCheck.targetVersionId}: got ${failedCheck.approvals}, need ${failedCheck.witness.threshold}`
+    );
+  }
+  return result;
+};
+
+/**
+ * Resolves a DID log and evaluates all applicable witness proofs, returning the
+ * computed witness results without strictly enforcing their thresholds.
+ * Structural, cryptographic, and non-witness integrity failures still throw;
+ * only an unmet witness threshold is returned as an unsatisfied result.
+ *
+ * @param log The DID log to resolve.
+ * @param options Internal resolution options, including verifier and witness proofs.
+ * @returns The resolved DID result and per-entry witness results.
+ * @throws If the log is structurally invalid or fails non-witness validation.
+ */
+export const resolveLogWithWitnessResults = async (
+  log: DIDLog,
+  options: InternalResolutionOptions = {}
+): Promise<{
+  result: { did: string; doc: DIDDoc | null; meta: DIDResolutionMeta };
+  witnessChecks: WitnessCheckResult[];
+}> => {
   // Stage 1: initialize resolution input and context.
   const logEntries = log.map((l) => deepClone(l));
   if (logEntries.length === 0) {
@@ -116,8 +149,7 @@ export const resolveLog = async (
       throw e;
     }
 
-    const decorateError =
-      resolvedSnapshot.meta && (!hasExplicitHistoricalSelector || resolverContext.witnessThresholdFailure);
+    const decorateError = resolvedSnapshot.meta && !hasExplicitHistoricalSelector;
     if (decorateError) {
       const message = e instanceof Error ? e.message : String(e);
       resolvedSnapshot.meta.error = 'invalidDid';
@@ -134,12 +166,12 @@ export const resolveLog = async (
       throw new Error('DID resolution failed: No valid result available for explicit selector');
     }
 
-    return {
+    const result = {
       did: lastValidSnapshot.did,
       doc: null,
       meta: {
         ...lastValidSnapshot.meta,
-        error: 'notFound',
+        error: 'notFound' as const,
         problemDetails: buildProblemDetails(
           'notFound',
           'The supplied explicit version selector did not match any entry in the DID log.',
@@ -147,6 +179,7 @@ export const resolveLog = async (
         ),
       },
     };
+    return { result, witnessChecks: resolverContext.witnessChecks ?? [] };
   }
 
   if (!resolvedSnapshot) {
@@ -177,22 +210,24 @@ export const resolveLog = async (
     }
   } else if (resolvedSnapshot.meta.deactivated) {
     resolvedSnapshot = markResolvedSnapshotDeactivated({ resolvedSnapshot, resolverContext });
-    return {
+    const result = {
       did: resolvedSnapshot.did,
       doc: null,
       meta: resolvedSnapshot.meta,
     };
+    return { result, witnessChecks: resolverContext.witnessChecks ?? [] };
   }
 
   if (!resolvedSnapshot.doc) {
     throw new Error('DID resolution failed: No valid document found');
   }
 
-  return {
+  const result = {
     did: resolvedSnapshot.did,
     doc: resolvedSnapshot.doc,
     meta: resolvedSnapshot.meta,
   };
+  return { result, witnessChecks: resolverContext.witnessChecks ?? [] };
 };
 
 const markResolvedSnapshotDeactivated = ({
@@ -223,7 +258,7 @@ const processResolvedLogEntries = async ({
   logEntries: DIDLog;
   initialMethod: string;
   options: InternalResolutionOptions;
-}): Promise<void> => {
+}): Promise<WitnessCheckResult[]> => {
   let activeMethod = initialMethod; // mutable; changes only on a single permitted upgrade
   let transitionOccurred = false;
 
@@ -327,6 +362,7 @@ const processResolvedLogEntries = async ({
     options,
     logEntries,
   });
+  return resolverContext.witnessChecks ?? [];
 };
 
 const createInitialResolverContext = (): ResolverContext => {
@@ -353,7 +389,6 @@ const createInitialResolverContext = (): ResolverContext => {
     lastValidSnapshot: null,
     requiredWitnessChecks: [],
     didIdMatchCount: 0,
-    witnessThresholdFailure: false,
   };
 };
 
@@ -564,24 +599,6 @@ const processSubsequentEntry = async ({
   return sourceEntry.state;
 };
 
-const getRequiredWitnessForEntry = (
-  previousWitness: WitnessParameterResolution | undefined,
-  parameters: DIDLogEntry['parameters'],
-  currentWitness: WitnessParameterResolution | undefined
-): WitnessParameterResolution | undefined => {
-  const explicitWitness = resolveWitnessParameter(parameters);
-
-  if (hasActiveWitnessRequirement(previousWitness)) {
-    return deepClone(previousWitness);
-  }
-
-  if (explicitWitness !== undefined && hasActiveWitnessRequirement(currentWitness)) {
-    return deepClone(currentWitness);
-  }
-
-  return undefined;
-};
-
 const finalizeResolutionChecks = async ({
   resolverContext,
   options,
@@ -596,40 +613,50 @@ const finalizeResolutionChecks = async ({
   }
 
   if (resolverContext.requiredWitnessChecks.length > 0) {
-    await enforceRequiredWitnessChecks({
+    const witnessChecks = await evaluateRequiredWitnessChecks({
       requiredWitnessChecks: resolverContext.requiredWitnessChecks,
       witnessProofs: options.witnessProofs,
       did: resolverContext.did,
       logEntries,
       verifier: options.verifier,
-      onThresholdFailure: () => {
-        resolverContext.witnessThresholdFailure = true;
-      },
     });
+    resolverContext.witnessChecks = witnessChecks;
   }
 };
 
-const enforceRequiredWitnessChecks = async ({
+/**
+ * Evaluates witness approvals for all required log entries without applying
+ * threshold policy. The internal resolution entry points decide whether
+ * unsatisfied checks should throw or be returned as verification results.
+ *
+ * @param requiredWitnessChecks The witness requirements derived during log traversal.
+ * @param witnessProofs Caller-supplied proofs, or undefined to fetch the published proof file.
+ * @param did The DID whose witness proof file should be fetched when needed.
+ * @param logEntries The resolved log entries used to determine proof coverage.
+ * @param verifier The verifier used to validate witness proofs.
+ * @returns The computed approval and satisfaction result for each requirement.
+ */
+const evaluateRequiredWitnessChecks = async ({
   requiredWitnessChecks,
   witnessProofs,
   did,
   logEntries,
   verifier,
-  onThresholdFailure,
 }: {
   requiredWitnessChecks: RequiredWitnessCheck[];
   witnessProofs: WitnessProofFileEntry[] | undefined;
   did: string;
   logEntries: DIDLog;
   verifier: ResolutionOptions['verifier'];
-  onThresholdFailure: () => void;
-}): Promise<void> => {
+}): Promise<WitnessCheckResult[]> => {
   let resolvedWitnessProofs = witnessProofs;
   if (!resolvedWitnessProofs) {
     resolvedWitnessProofs = await fetchWitnessProofs(did);
   }
 
   const publishedVersionNumbers = new Map(logEntries.map((entry, index) => [entry.versionId, index + 1]));
+
+  const computedChecks: WitnessCheckResult[] = [];
 
   for (const check of requiredWitnessChecks) {
     const candidateProofs = resolvedWitnessProofs.filter((witnessProof) => {
@@ -639,12 +666,9 @@ const enforceRequiredWitnessChecks = async ({
 
     const approvals = await countVerifiedWitnessApprovals(candidateProofs, check.witness, verifier);
     const threshold = normalizeWitnessThreshold(check.witness.threshold);
-
-    if (approvals < threshold) {
-      onThresholdFailure();
-      throw new Error(
-        `Witness threshold not met for version ${check.targetVersionId}: got ${approvals}, need ${check.witness.threshold}`
-      );
-    }
+    const satisfied = approvals >= threshold;
+    computedChecks.push({ ...check, approvals, satisfied });
   }
+
+  return computedChecks;
 };
