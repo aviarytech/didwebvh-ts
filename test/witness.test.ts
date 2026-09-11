@@ -1,5 +1,4 @@
 import { beforeAll, describe, expect, test, vi } from 'vitest';
-import { computeWitnessRequirementChecks } from '../src/core/witness-requirements.js';
 import { getWitnessRequirements, verifyWitnessProofs } from '../src/index.js';
 import type {
   CreateDIDResult,
@@ -521,11 +520,27 @@ describe('Witness Implementation Tests', async () => {
     });
 
     test('Agrees with the resolver-derived requirements for the same log', async () => {
-      const checks = computeWitnessRequirementChecks(initialDID.log);
       const requirements = getWitnessRequirements(initialDID);
+      const versionId = initialDID.log[0].versionId;
+      const witnessProofs = [
+        {
+          versionId,
+          proof: await Promise.all([
+            createWitnessProof(createWitnessSigner(witness1), versionId, witnessVerificationMethod(witness1)),
+            createWitnessProof(createWitnessSigner(witness2), versionId, witnessVerificationMethod(witness2)),
+          ]),
+        },
+      ];
+      const resolved = await verifyWitnessProofs(initialDID, witnessProofs, { verifier: testImplementation });
 
-      expect(requirements.map((r) => r.versionId)).toEqual(checks.map((c) => c.targetVersionId));
-      expect(requirements.map((r) => r.threshold)).toEqual(checks.map((c) => c.witness.threshold));
+      expect(resolved.verified).toBe(true);
+      expect(resolved.requirements).toEqual(
+        requirements.map((requirement) => ({
+          ...requirement,
+          approvals: 2,
+          satisfied: true,
+        }))
+      );
     });
   });
 
