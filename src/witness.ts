@@ -1,4 +1,4 @@
-import { createDataIntegrityProofTemplate, signDataIntegrityProof } from './cryptography';
+import { createDataIntegrityProofTemplate, signDataIntegrityProof } from './cryptography.js';
 import type {
   DataIntegrityProof,
   DataIntegrityProofTemplate,
@@ -10,13 +10,13 @@ import type {
   WitnessProofFileEntry,
   WitnessSigningOptions,
   WitnessSigningResult,
-} from './interfaces';
-import { fetchWitnessProofs } from './utils';
-import { concatBuffers } from './utils/buffer';
-import { canonicalizeStrict } from './utils/canonicalize';
-import { createHash } from './utils/crypto';
-import { multibaseDecode } from './utils/multiformats';
-import { parseDidKeyDid, parseDidKeyVerificationMethod } from './utils/verification-methods';
+} from './interfaces.js';
+import { concatBuffers } from './utils/buffer.js';
+import { canonicalizeStrict } from './utils/canonicalize.js';
+import { createHash } from './utils/crypto.js';
+import { multibaseDecode } from './utils/multiformats.js';
+import { parseDidKeyDid, parseDidKeyVerificationMethod } from './utils/verification-methods.js';
+import { fetchWitnessProofs } from './utils.js';
 
 /**
  * Creates a single witness DataIntegrityProof for one `versionId`.
@@ -223,7 +223,6 @@ export function countWitnessApprovals(proofs: DataIntegrityProof[], witnesses: W
 }
 
 export async function countVerifiedWitnessApprovals(
-  logEntry: DIDLogEntry,
   witnessProofs: WitnessProofFileEntry[],
   currentWitness: WitnessParameterResolution,
   verifier?: Verifier

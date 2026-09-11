@@ -7,10 +7,10 @@ import {
   SERVICE_TYPE_RELATIVE_REF,
   ServiceFragment,
   VERIFICATION_RELATIONSHIPS,
-} from './constants';
-import type { DIDDoc, ServiceEndpoint, VerificationMethod } from './interfaces';
-import { deepClone, getBaseUrl, replaceValueInObject } from './utils';
-import { normalizeVMs } from './utils/verification-methods';
+} from './constants.js';
+import type { DIDDoc, ServiceEndpoint, VerificationMethod } from './interfaces.js';
+import { normalizeVMs } from './utils/verification-methods.js';
+import { deepClone, getBaseUrl, replaceValueInObject } from './utils.js';
 
 type CreateDIDDocOptions = {
   did: string;

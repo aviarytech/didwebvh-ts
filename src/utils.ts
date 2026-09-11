@@ -1,5 +1,5 @@
-import { METHOD } from './constants';
-import type { DIDLog, WitnessProofFileEntry } from './interfaces';
+import { METHOD } from './constants.js';
+import type { DIDLog, WitnessProofFileEntry } from './interfaces.js';
 
 // Shared constants and types
 

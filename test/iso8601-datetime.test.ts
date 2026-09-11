@@ -3,7 +3,7 @@ import {
   createNextVersionTime,
   parseUtcIso8601VersionTime,
   validateUtcIso8601NotInFuture,
-} from '../src/utils/iso8601-datetime';
+} from '../src/utils/iso8601-datetime.js';
 
 describe('ISO8601 DateTime Validation', () => {
   test('Accepts Z timezone', () => {

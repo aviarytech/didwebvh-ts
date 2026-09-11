@@ -5,17 +5,17 @@ import type {
   DIDLog,
   Signer,
   VerificationMethod,
-} from '../src/interfaces';
-import { createDID, resolveDIDFromLog, updateDID } from '../src/method';
-import { deriveHash } from '../src/utils/crypto';
-import { MultibaseEncoding, multibaseEncode } from '../src/utils/multiformats';
-import { parseDidKeyDid, parseDidKeyVerificationMethod } from '../src/utils/verification-methods';
+} from '../src/interfaces.js';
+import { createDID, resolveDIDFromLog, updateDID } from '../src/method.js';
+import { deriveHash } from '../src/utils/crypto.js';
+import { MultibaseEncoding, multibaseEncode } from '../src/utils/multiformats.js';
+import { parseDidKeyDid, parseDidKeyVerificationMethod } from '../src/utils/verification-methods.js';
 import {
   countWitnessApprovals,
   createWitnessProof,
   signWitnessProofEntries,
   signWitnessProofEntry,
-} from '../src/witness';
+} from '../src/witness.js';
 import {
   asPublicVerificationMethods,
   buildV05Genesis,
@@ -23,7 +23,7 @@ import {
   createTestVerifier,
   generateTestVerificationMethod,
   TestCryptoImplementation,
-} from './utils';
+} from './utils.js';
 
 describe('Witness Implementation Tests', async () => {
   let authKey: VerificationMethod;

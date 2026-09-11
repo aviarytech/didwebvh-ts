@@ -3,8 +3,8 @@ import {
   decodeVerificationMethods,
   encodeVerificationMethods,
   getVerificationMethodsFromEnv,
-} from '../src/cli/persistence';
-import type { VerificationMethod } from '../src/interfaces';
+} from '../src/cli/persistence.js';
+import type { VerificationMethod } from '../src/interfaces.js';
 
 describe('CLI verification-method persistence helpers', () => {
   test('round-trips verification methods via encode/decode', () => {

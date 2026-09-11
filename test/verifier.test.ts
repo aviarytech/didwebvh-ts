@@ -1,6 +1,6 @@
 import { ed25519 } from '@noble/curves/ed25519.js';
 import { describe, expect, test } from 'vitest';
-import { defaultVerifier } from '../src/verifier';
+import { defaultVerifier } from '../src/verifier.js';
 
 describe('defaultVerifier', () => {
   test('returns true for a valid signature', async () => {

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { concatBuffers } from '../src/utils/buffer';
+import { concatBuffers } from '../src/utils/buffer.js';
 
 describe('buffer utilities', () => {
   test('concatenates buffers', () => {
