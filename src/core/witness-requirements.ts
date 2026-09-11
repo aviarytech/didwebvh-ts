@@ -31,9 +31,10 @@ export interface WitnessCheckResult extends RequiredWitnessCheck {
  *   introduces a non-empty configuration become immediately active and govern
  *   that same entry (first activation).
  *
- * Both the resolver (`resolveLog`) and the public `getWitnessRequirements` API
- * call this function so there is exactly one witness-transition state
- * machine.
+ * The resolver and the public `getWitnessRequirements` API both use this
+ * helper when determining which configuration governs an entry. The resolver
+ * retains its own entry-processing walk because it must validate and resolve
+ * each log entry.
  */
 export const getRequiredWitnessForEntry = (
   previousWitness: WitnessParameterResolution | undefined,
@@ -60,10 +61,9 @@ export const getRequiredWitnessForEntry = (
  * verification and requires no `Verifier`; only structural witness-parameter
  * validation via `validateWitnessParameter`.
  *
- * This is the pure, synchronous, verifier-independent counterpart to the
- * resolver's per-entry witness-requirement tracking. `resolveLog` and
- * `getWitnessRequirements` both derive their required-witness checks from
- * this single function.
+ * This is the pure, synchronous, verifier-independent walk used by
+ * `getWitnessRequirements`. The resolver performs its own entry-processing
+ * walk and shares the witness transition helper above.
  */
 export const computeWitnessRequirementChecks = (log: DIDLog): RequiredWitnessCheck[] => {
   const checks: RequiredWitnessCheck[] = [];
