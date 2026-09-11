@@ -288,10 +288,30 @@ export interface VerifyWitnessProofsOptions {
   verifier?: Verifier;
 }
 
+export type WitnessProofRejectionCode =
+  | 'unknown-witness'
+  | 'duplicate-witness'
+  | 'invalid-proof-type'
+  | 'invalid-proof-purpose'
+  | 'invalid-cryptosuite'
+  | 'invalid-verification-method'
+  | 'invalid-public-key'
+  | 'invalid-signature';
+
+export interface WitnessProofRejection {
+  requirementVersionId?: string;
+  proofVersionId: string;
+  proofIndex: number;
+  verificationMethod?: string;
+  code: WitnessProofRejectionCode;
+  message: string;
+}
+
 export interface WitnessVerificationResult {
   verified: boolean;
   requirements: (WitnessRequirement & {
     satisfied: boolean;
     approvals: number;
   })[];
+  rejectedProofs: WitnessProofRejection[];
 }
