@@ -135,5 +135,8 @@ describe('updateKeys input normalization', () => {
         documentStateIsValid(log[0], [encodeKey(key.publicKeyMultibase!, form)], undefined, true, defaultVerifier)
       ).rejects.toThrow('is not authorized to update');
     }
+    await expect(
+      documentStateIsValid(log[0], [key.publicKeyMultibase!], undefined, true, defaultVerifier)
+    ).resolves.toBe(true);
   });
 });
