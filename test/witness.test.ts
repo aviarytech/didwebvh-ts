@@ -1859,7 +1859,7 @@ describe('Witness Implementation Tests', async () => {
 
     const duplicateWitnessId = `did:key:${witness1.publicKeyMultibase}`;
 
-    expect(
+    await expect(
       updateDID({
         log: noWitnessDID.log,
         signer: createTestSigner(authKey),
