@@ -61,7 +61,7 @@ describe('Strict address input validation and parsing', () => {
   });
 
   test('Rejects localhost HTTP URL with path and port', async () => {
-    expect(createFromInput('http://localhost:8000/test')).rejects.toThrow('HTTP is not allowed; use HTTPS');
+    await expect(createFromInput('http://localhost:8000/test')).rejects.toThrow('HTTP is not allowed; use HTTPS');
   });
 
   test('Accepts localhost HTTPS URL with path and port', async () => {
@@ -75,91 +75,91 @@ describe('Strict address input validation and parsing', () => {
   });
 
   test('Rejects unsupported URL scheme', async () => {
-    expect(createFromInput('ftp://example.com')).rejects.toThrow();
+    await expect(createFromInput('ftp://example.com')).rejects.toThrow();
   });
 
   test('Rejects HTTP URL for non-local host', async () => {
-    expect(createFromInput('http://example.com')).rejects.toThrow();
+    await expect(createFromInput('http://example.com')).rejects.toThrow();
   });
 
   test('Rejects out-of-range port', async () => {
-    expect(createFromInput('example.com:999999')).rejects.toThrow();
+    await expect(createFromInput('example.com:999999')).rejects.toThrow();
   });
 
   test('Rejects IPv4 host input', async () => {
-    expect(createFromInput('192.168.1.10')).rejects.toThrow();
+    await expect(createFromInput('192.168.1.10')).rejects.toThrow();
   });
 
   test('Rejects encoded IPv4 host input', async () => {
-    expect(createFromInput('127%2E0%2E0%2E1')).rejects.toThrow('IP addresses are not allowed as hosts');
+    await expect(createFromInput('127%2E0%2E0%2E1')).rejects.toThrow('IP addresses are not allowed as hosts');
   });
 
   test('Rejects lowercase encoded-port IP host input', async () => {
-    expect(createFromInput('127.0.0.1%3a8080')).rejects.toThrow('IP addresses are not allowed as hosts');
+    await expect(createFromInput('127.0.0.1%3a8080')).rejects.toThrow('IP addresses are not allowed as hosts');
   });
 
   test('Rejects did:webvh input containing fragment contamination', async () => {
-    expect(createFromInput('did:webvh:{SCID}:example.com#frag')).rejects.toThrow(
+    await expect(createFromInput('did:webvh:{SCID}:example.com#frag')).rejects.toThrow(
       'Address input must not include query or fragment components'
     );
   });
 
   test('Rejects did:webvh input containing query contamination', async () => {
-    expect(createFromInput('did:webvh:{SCID}:example.com?query=1')).rejects.toThrow(
+    await expect(createFromInput('did:webvh:{SCID}:example.com?query=1')).rejects.toThrow(
       'Address input must not include query or fragment components'
     );
   });
 
   test('Rejects did:webvh input containing dot-segment path traversal', async () => {
-    expect(createFromInput('did:webvh:{SCID}:example.com:..:secrets')).rejects.toThrow(
+    await expect(createFromInput('did:webvh:{SCID}:example.com:..:secrets')).rejects.toThrow(
       'did:webvh identifier must not contain dot-segments'
     );
   });
 
   test('Rejects did:webvh input containing percent-encoded traversal segment', async () => {
-    expect(createFromInput('did:webvh:{SCID}:example.com:%2E%2E:secrets')).rejects.toThrow(
+    await expect(createFromInput('did:webvh:{SCID}:example.com:%2E%2E:secrets')).rejects.toThrow(
       'did:webvh identifier must not contain dot-segments'
     );
   });
 
   test('Rejects did:webvh input containing decoded slash within one path segment', async () => {
-    expect(createFromInput('did:webvh:{SCID}:example.com:a%2Fb')).rejects.toThrow(
+    await expect(createFromInput('did:webvh:{SCID}:example.com:a%2Fb')).rejects.toThrow(
       'did:webvh identifier must not contain decoded slash within a single path segment'
     );
   });
 
   test('Rejects double-encoded separator', async () => {
-    expect(createFromInput('example.com%253A8080')).rejects.toThrow();
+    await expect(createFromInput('example.com%253A8080')).rejects.toThrow();
   });
 
   test('Rejects mangled host:port input', async () => {
-    expect(createFromInput('%%%bad host%%%::notaport::')).rejects.toThrow();
+    await expect(createFromInput('%%%bad host%%%::notaport::')).rejects.toThrow();
   });
 
   test('Rejects mangled URL input', async () => {
-    expect(createFromInput('https://%%%bad host%%%::notaport::/%%%')).rejects.toThrow();
+    await expect(createFromInput('https://%%%bad host%%%::notaport::/%%%')).rejects.toThrow();
   });
 
   test('Rejects decoded backslash in path segment', async () => {
-    expect(createFromInput('did:webvh:{SCID}:example.com:test%5Csecret')).rejects.toThrow(
+    await expect(createFromInput('did:webvh:{SCID}:example.com:test%5Csecret')).rejects.toThrow(
       'did:webvh identifier must not contain decoded backslash within a path segment'
     );
   });
 
   test('Rejects decoded NUL in path segment', async () => {
-    expect(createFromInput('did:webvh:{SCID}:example.com:test%00secret')).rejects.toThrow(
+    await expect(createFromInput('did:webvh:{SCID}:example.com:test%00secret')).rejects.toThrow(
       'did:webvh identifier must not contain decoded NUL character within a path segment'
     );
   });
 
   test('Rejects leading whitespace in decoded path segment', async () => {
-    expect(createFromInput('did:webvh:{SCID}:example.com:%20test')).rejects.toThrow(
+    await expect(createFromInput('did:webvh:{SCID}:example.com:%20test')).rejects.toThrow(
       'did:webvh identifier must not contain leading or trailing whitespace in decoded path segment'
     );
   });
 
   test('Rejects trailing whitespace in decoded path segment', async () => {
-    expect(createFromInput('did:webvh:{SCID}:example.com:test%20')).rejects.toThrow(
+    await expect(createFromInput('did:webvh:{SCID}:example.com:test%20')).rejects.toThrow(
       'did:webvh identifier must not contain leading or trailing whitespace in decoded path segment'
     );
   });

@@ -178,7 +178,7 @@ describe('Injectable Cryptography Tests', () => {
       ],
     };
 
-    expect(documentStateIsValid(signedDoc, [updateKey], null, true, failingMockImplementation)).rejects.toThrow(
+    await expect(documentStateIsValid(signedDoc, [updateKey], null, true, failingMockImplementation)).rejects.toThrow(
       'Proof 0 failed verification'
     );
   });
@@ -205,8 +205,9 @@ describe('Injectable Cryptography Tests', () => {
       ],
     };
 
-    const approvals = await countVerifiedWitnessApprovals(witnessProofs, witness, mockImplementation);
-    expect(approvals).toBe(1);
+    const result = await countVerifiedWitnessApprovals(witnessProofs, witness, mockImplementation);
+    expect(result.approvals).toBe(1);
+    expect(result.rejectedProofs).toEqual([]);
   });
 
   test('Count verified witness approvals logs and skips invalid proofs', async () => {
@@ -238,8 +239,9 @@ describe('Injectable Cryptography Tests', () => {
     };
 
     try {
-      const approvals = await countVerifiedWitnessApprovals(witnessProofs, witness, failingMockImplementation);
-      expect(approvals).toBe(0);
+      const result = await countVerifiedWitnessApprovals(witnessProofs, witness, failingMockImplementation);
+      expect(result.approvals).toBe(0);
+      expect(result.rejectedProofs).toHaveLength(1);
     } finally {
       console.warn = originalWarn;
     }
@@ -261,9 +263,9 @@ describe('Injectable Cryptography Tests', () => {
       ],
     };
 
-    expect(documentStateIsValid(signedDoc, [mockImplementation.getVerificationMethodId()], null, true)).rejects.toThrow(
-      'Verifier implementation is required'
-    );
+    await expect(
+      documentStateIsValid(signedDoc, [mockImplementation.getVerificationMethodId()], null, true)
+    ).rejects.toThrow('Verifier implementation is required');
   });
 
   test('Require verifier implementation for witness proofs', async () => {
@@ -288,7 +290,7 @@ describe('Injectable Cryptography Tests', () => {
       ],
     };
 
-    expect(countVerifiedWitnessApprovals(witnessProofs, witness)).rejects.toThrow(
+    await expect(countVerifiedWitnessApprovals(witnessProofs, witness)).rejects.toThrow(
       'Verifier implementation is required'
     );
   });
