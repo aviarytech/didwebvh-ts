@@ -81,6 +81,16 @@ Examples:
   pnpm cli -- generate-vm
 `;
 
+export class CliError extends Error {
+  constructor(
+    message: string,
+    readonly exitCode = 1
+  ) {
+    super(message);
+    this.name = 'CliError';
+  }
+}
+
 // Add this function at the top with the other constants
 function showHelp() {
   console.log(usage);
@@ -216,8 +226,7 @@ export async function handleCreate(args: string[]) {
     : (witnesses?.length ?? 0);
 
   if (!addressInput) {
-    console.error('Address is required for create command (use --address)');
-    process.exit(1);
+    throw new CliError('Address is required for create command (use --address)');
   }
 
   try {
@@ -284,8 +293,8 @@ export async function handleCreate(args: string[]) {
 
     return { did, doc, meta, log };
   } catch (error) {
-    console.error('Error creating DID:', error);
-    process.exit(1);
+    if (error instanceof CliError) throw error;
+    throw new CliError(`Error creating DID: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -296,8 +305,7 @@ export async function handleResolve(args: string[]) {
   const witnessFile = options['witness-file'] as string | undefined;
 
   if (!didIdentifier && !logFile) {
-    console.error('Either --did or --log is required for resolve command');
-    process.exit(1);
+    throw new CliError('Either --did or --log is required for resolve command');
   }
 
   const resolutionOptions: ResolutionOptions & { witnessProofs?: WitnessProofFileEntry[]; verifier?: Verifier } = {};
@@ -315,8 +323,7 @@ export async function handleResolve(args: string[]) {
       const meta = resolution.didDocumentMetadata;
       const did = doc?.id ?? log[log.length - 1]?.state?.id ?? '';
       if (resolution.didResolutionMetadata.error) {
-        console.error('Resolution error:', JSON.stringify(resolution.didResolutionMetadata, null, 2));
-        process.exit(1);
+        throw new CliError(`Resolution error: ${JSON.stringify(resolution.didResolutionMetadata, null, 2)}`);
       }
       console.log('Resolved DID:', did);
       console.log('DID Document:', JSON.stringify(doc, null, 2));
@@ -331,8 +338,7 @@ export async function handleResolve(args: string[]) {
       const meta = resolution.didDocumentMetadata;
       const did = doc?.id ?? didIdentifier;
       if (resolution.didResolutionMetadata.error) {
-        console.error('Resolution error:', JSON.stringify(resolution.didResolutionMetadata, null, 2));
-        process.exit(1);
+        throw new CliError(`Resolution error: ${JSON.stringify(resolution.didResolutionMetadata, null, 2)}`);
       }
       console.log('Resolved DID:', did);
       console.log('DID Document:', JSON.stringify(doc, null, 2));
@@ -340,8 +346,8 @@ export async function handleResolve(args: string[]) {
       return { did, doc, meta };
     }
   } catch (error) {
-    console.error('Error resolving DID:', error);
-    process.exit(1);
+    if (error instanceof CliError) throw error;
+    throw new CliError(`Error resolving DID: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -351,12 +357,10 @@ export async function handleVerifyProofs(args: string[]) {
   const witnessFile = options['witness-file'] as string | undefined;
 
   if (!logFile) {
-    console.error('Log file is required for verify-proofs command');
-    process.exit(1);
+    throw new CliError('Log file is required for verify-proofs command');
   }
   if (!witnessFile) {
-    console.error('Witness file is required for verify-proofs command');
-    process.exit(1);
+    throw new CliError('Witness file is required for verify-proofs command');
   }
 
   try {
@@ -370,13 +374,13 @@ export async function handleVerifyProofs(args: string[]) {
       verifier: createCustomCrypto(),
     });
     console.log(JSON.stringify(result, null, 2));
-    if (!result.verified) {
-      process.exitCode = 1;
-    }
+    // Note: result.verified being false is a successful check with a negative outcome, not an
+    // error. It is not thrown as a CliError here; callers (e.g. main()) map it to a non-zero
+    // exit code based on the returned result.
     return result;
   } catch (error) {
-    console.error('Error verifying witness proofs:', error);
-    process.exit(1);
+    if (error instanceof CliError) throw error;
+    throw new CliError(`Error verifying witness proofs: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -396,8 +400,7 @@ export async function handleUpdate(args: string[]) {
   const watchers = options.watcher as string[] | undefined;
 
   if (!logFile) {
-    console.error('Log file is required for update command');
-    process.exit(1);
+    throw new CliError('Log file is required for update command');
   }
 
   try {
@@ -506,8 +509,8 @@ export async function handleUpdate(args: string[]) {
 
     return result;
   } catch (error) {
-    console.error('Error updating DID:', error);
-    process.exit(1);
+    if (error instanceof CliError) throw error;
+    throw new CliError(`Error updating DID: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -518,8 +521,7 @@ export async function handleDeactivate(args: string[]) {
   const witnessProofs = readWitnessProofsFile(options['witness-file'] as string | undefined);
 
   if (!logFile) {
-    console.error('Log file is required for deactivate command');
-    process.exit(1);
+    throw new CliError('Log file is required for deactivate command');
   }
 
   try {
@@ -566,8 +568,8 @@ export async function handleDeactivate(args: string[]) {
 
     return result;
   } catch (error) {
-    console.error('Error deactivating DID:', error);
-    process.exit(1);
+    if (error instanceof CliError) throw error;
+    throw new CliError(`Error deactivating DID: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -580,45 +582,47 @@ async function handleGenerateWitnessProof(args: string[]) {
   const output = options.output as string;
 
   if (versionIds.length === 0) {
-    console.error('At least one --version-id is required');
-    process.exit(1);
+    throw new CliError('At least one --version-id is required');
   }
   if (!output) {
-    console.error('Output file is required');
-    process.exit(1);
+    throw new CliError('Output file is required');
   }
   if (!witnessDids || !witnessSecrets || witnessDids.length !== witnessSecrets.length) {
-    console.error('Must provide matching number of witness DIDs and secrets');
-    process.exit(1);
+    throw new CliError('Must provide matching number of witness DIDs and secrets');
   }
 
-  const witnessSignersByDid: Record<string, Signer> = {};
-  const witnesses: { id: string }[] = [];
+  try {
+    const witnessSignersByDid: Record<string, Signer> = {};
+    const witnesses: { id: string }[] = [];
 
-  for (let i = 0; i < witnessDids.length; i++) {
-    const did = witnessDids[i];
-    const secret = witnessSecrets[i];
-    const { did: normalizedDid, keyMultibase: publicKeyMultibase } = parseDidKeyDid(did);
-    const vm: VerificationMethod = {
-      type: 'Multikey',
-      publicKeyMultibase,
-      secretKeyMultibase: secret,
-      purpose: 'authentication',
-    };
+    for (let i = 0; i < witnessDids.length; i++) {
+      const did = witnessDids[i];
+      const secret = witnessSecrets[i];
+      const { did: normalizedDid, keyMultibase: publicKeyMultibase } = parseDidKeyDid(did);
+      const vm: VerificationMethod = {
+        type: 'Multikey',
+        publicKeyMultibase,
+        secretKeyMultibase: secret,
+        purpose: 'authentication',
+      };
 
-    witnessSignersByDid[normalizedDid] = createCustomCrypto(vm);
-    witnesses.push({ id: normalizedDid });
+      witnessSignersByDid[normalizedDid] = createCustomCrypto(vm);
+      witnesses.push({ id: normalizedDid });
+    }
+
+    const witnessEntries = await signWitnessProofEntries(versionIds, witnesses, witnessSignersByDid);
+
+    const witnessFileContent = witnessEntries.map((entry) => ({
+      versionId: entry.versionId,
+      proof: entry.proof,
+    }));
+
+    fs.writeFileSync(output, JSON.stringify(witnessFileContent, null, 2));
+    console.log(`Witness proof file generated at ${output}`);
+  } catch (error) {
+    if (error instanceof CliError) throw error;
+    throw new CliError(`Error generating witness proof: ${error instanceof Error ? error.message : String(error)}`);
   }
-
-  const witnessEntries = await signWitnessProofEntries(versionIds, witnesses, witnessSignersByDid);
-
-  const witnessFileContent = witnessEntries.map((entry) => ({
-    versionId: entry.versionId,
-    proof: entry.proof,
-  }));
-
-  fs.writeFileSync(output, JSON.stringify(witnessFileContent, null, 2));
-  console.log(`Witness proof file generated at ${output}`);
 }
 
 type VerificationMethodType =
@@ -652,8 +656,7 @@ function parseOptions(args: string[]): Record<string, string | string[] | undefi
           if (isValidVerificationMethodType(value)) {
             (options[key] as VerificationMethodType[]).push(value);
           } else {
-            console.error(`Invalid verification method type: ${value}`);
-            process.exit(1);
+            throw new CliError(`Invalid verification method type: ${value}`);
           }
         } else {
           options[key] = args[++i];
@@ -681,7 +684,7 @@ function parseServices(services: string[]): ServiceEndpoint[] {
 }
 
 // Update the main function to be exported
-export async function main() {
+export async function main(): Promise<number> {
   const [command, ...args] = process.argv.slice(2);
   // console.log('Command:', command);
   // console.log('Args:', args);
@@ -691,22 +694,23 @@ export async function main() {
       case 'create':
         console.log('Handling create command...');
         await handleCreate(args);
-        break;
+        return 0;
       case 'resolve':
         await handleResolve(args);
-        break;
-      case 'verify-proofs':
-        await handleVerifyProofs(args);
-        break;
+        return 0;
+      case 'verify-proofs': {
+        const result = await handleVerifyProofs(args);
+        return result.verified ? 0 : 1;
+      }
       case 'update':
         await handleUpdate(args);
-        break;
+        return 0;
       case 'deactivate':
         await handleDeactivate(args);
-        break;
+        return 0;
       case 'generate-witness-proof':
         await handleGenerateWitnessProof(args);
-        break;
+        return 0;
       case 'generate-vm': {
         const vm = await generateVerificationMethod('authentication');
         const publicKeyMultibase = vm.publicKeyMultibase;
@@ -722,19 +726,24 @@ export async function main() {
             2
           )
         );
-        break;
+        return 0;
       }
       case 'help':
         showHelp();
-        break;
+        return 0;
       default:
-        console.error('Unknown command:', command);
         showHelp();
-        process.exit(1);
+        throw new CliError(`Unknown command: ${command}`);
     }
   } catch (error) {
-    console.error('Error:', error);
-    process.exit(1);
+    if (error instanceof CliError) {
+      console.error(error.message);
+    } else if (error instanceof Error) {
+      console.error(error.stack ?? error.message);
+    } else {
+      console.error(String(error));
+    }
+    return error instanceof CliError ? error.exitCode : 1;
   }
 }
 
@@ -742,8 +751,12 @@ export async function main() {
 import { fileURLToPath } from 'node:url';
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  main().catch((error) => {
-    console.error('Fatal error:', error);
-    process.exit(1);
-  });
+  main()
+    .then((exitCode) => {
+      process.exitCode = exitCode;
+    })
+    .catch((error) => {
+      console.error('Fatal error:', error);
+      process.exitCode = 1;
+    });
 }
