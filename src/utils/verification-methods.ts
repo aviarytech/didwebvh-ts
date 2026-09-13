@@ -159,3 +159,22 @@ export function parseDidKeyVerificationMethod(input: string): ParsedDidKeyVerifi
     keyMultibase: parsedDid.keyMultibase,
   };
 }
+
+/** Normalize caller-supplied update keys before hashing or signing a new log entry. */
+export function normalizeUpdateKeys(updateKeys: string[]): string[] {
+  return updateKeys.map((key, index) => {
+    try {
+      const { keyMultibase } = key.startsWith(DID_KEY_PREFIX)
+        ? parseDidKeyVerificationMethod(key)
+        : parseDidKeyDid(`${DID_KEY_PREFIX}${key}`);
+      const { bytes } = multibaseDecode(keyMultibase);
+      if (bytes[0] !== 0xed || bytes[1] !== 0x01) {
+        throw new Error("multiKey doesn't include ed25519 header (0xed01)");
+      }
+      return keyMultibase;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Invalid updateKeys[${index}]: ${message}`);
+    }
+  });
+}

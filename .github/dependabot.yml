@@ -1,0 +1,68 @@
+# Dependabot configuration
+# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+#
+# Based on the LF Decentralized Trust Dependabot configuration example:
+# https://github.com/LF-Decentralized-Trust/governance/blob/main/tac/guidelines/dependabot-example.md
+#
+# Each ecosystem groups ALL of its updates into a single PR per run. Both regular
+# version updates and security fixes are grouped, so Dependabot opens at most one
+# PR per ecosystem (security updates are otherwise opened individually and
+# ungrouped by default). Every grouped PR lands on its own Dependabot branch.
+#
+# Every ecosystem also sets a 30-day `cooldown`: a newly published version is not
+# proposed until it has been on the registry for 30 days, which is the window
+# in which a compromised or typosquatted release is usually yanked. `cooldown`
+# applies to version updates ONLY -- security updates driven by a published
+# advisory are never delayed by it. A dependency still inside its cooldown is
+# simply left out of that run's group PR and picked up once it becomes eligible.
+#
+# NOTE: Dependabot does not support wildcards in `target-branch` (it accepts
+# exactly one branch name, and the default branch when omitted). To run on the
+# release/* branches, every release branch needs its own duplicated set of
+# entries with `target-branch` set. The default-branch entries (no
+# `target-branch`) plus one release branch are defined below; copy the release
+# block and change `target-branch` for any additional release/* branch.
+
+version: 2
+updates:
+  # ----------------------------------------------------------------------------
+  # Default branch
+  # ----------------------------------------------------------------------------
+
+  - package-ecosystem: npm
+    directories:
+      - "/"
+      - "/examples"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 1
+    cooldown:
+      default-days: 30
+      semver-major-days: 30
+      semver-minor-days: 30
+      semver-patch-days: 30
+    groups:
+      npm:
+        applies-to: version-updates
+        patterns: ["*"]
+      npm-security:
+        applies-to: security-updates
+        patterns: ["*"]
+
+  - package-ecosystem: github-actions
+    directories:
+      - "/"
+      - "/.github/actions/*"
+      - "/.github/workflows/*"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 1
+    cooldown:
+      default-days: 30
+    groups:
+      github-actions:
+        applies-to: version-updates
+        patterns: ["*"]
+      github-actions-security:
+        applies-to: security-updates
+        patterns: ["*"]
