@@ -263,18 +263,16 @@ describe('CLI error handling', () => {
   });
 
   describe('handleDeactivate environment failures', () => {
-    const ENV_FILE = join(process.cwd(), '.env');
-
     test('wraps "no verification method found in environment" as a CliError', async () => {
-      const logFile = join(TEST_DIR, 'deactivate-no-env.jsonl');
+      // writeVerificationMethodToEnv()/getVerificationMethodsFromEnv() both resolve to
+      // `${process.cwd()}/.env`. Run this test from an isolated scratch directory instead of
+      // touching the real repo .env, which e2e.test.ts also manipulates and could race with.
+      const isolatedCwd = fs.mkdtempSync(join(TEST_DIR, 'env-isolation-'));
+      const logFile = join(isolatedCwd, 'deactivate-no-env.jsonl');
+      const originalCwd = process.cwd();
       const originalEnvVar = process.env.DID_VERIFICATION_METHODS;
-      let originalEnvFile: string | null = null;
-      try {
-        originalEnvFile = fs.readFileSync(ENV_FILE, 'utf8');
-      } catch {
-        originalEnvFile = null;
-      }
 
+      process.chdir(isolatedCwd);
       try {
         // Create a minimal DID via handleCreate without --output, so no env VM is persisted,
         // but capture the log for use with handleDeactivate against a clean environment.
@@ -283,28 +281,22 @@ describe('CLI error handling', () => {
         logSpy.mockRestore();
         fs.writeFileSync(logFile, `${created.log.map((entry) => JSON.stringify(entry)).join('\n')}\n`);
 
-        // Ensure both the in-process env var and the on-disk .env fallback are clear,
-        // since getVerificationMethodsFromEnv() reads whichever is present.
+        // Ensure the in-process env var is clear too, since getVerificationMethodsFromEnv()
+        // prefers it over the (isolated, non-existent) on-disk .env fallback.
         delete process.env.DID_VERIFICATION_METHODS;
-        fs.writeFileSync(ENV_FILE, '');
 
         await expect(handleDeactivate(['--log', logFile])).rejects.toMatchObject({
           name: 'CliError',
           message: expect.stringContaining('No verification method found in environment'),
         });
       } finally {
+        process.chdir(originalCwd);
         if (originalEnvVar !== undefined) {
           process.env.DID_VERIFICATION_METHODS = originalEnvVar;
         } else {
           delete process.env.DID_VERIFICATION_METHODS;
         }
-        if (originalEnvFile !== null) {
-          fs.writeFileSync(ENV_FILE, originalEnvFile);
-        } else {
-          try {
-            fs.unlinkSync(ENV_FILE);
-          } catch {}
-        }
+        fs.rmSync(isolatedCwd, { recursive: true, force: true });
       }
     });
   });

@@ -7,20 +7,26 @@ import type { VerificationMethod } from '../../interfaces.js';
 import { resolveDIDFromLog } from '../../method.js';
 import { readLogFromDisk } from '../persistence.js';
 
-const TEST_DIR = join(process.cwd(), 'test', 'temp-cli-e2e');
-const ENV_FILE = join(process.cwd(), '.env');
+const REPO_ROOT = process.cwd();
+const TEST_DIR = join(REPO_ROOT, 'test', 'temp-cli-e2e');
+// CLI subprocesses run with cwd: TEST_DIR (see runCli below) so that
+// writeVerificationMethodToEnv()/getVerificationMethodsFromEnv(), which both resolve to
+// `${process.cwd()}/.env`, read and write an isolated .env instead of the real repo-root one.
+// error-handling.test.ts touches the same real .env when run directly, so sharing it here would
+// risk both suites racing to save/restore/truncate the same file.
+const CLI_ENTRY = join(REPO_ROOT, 'src', 'cli', 'index.ts');
+const ISOLATED_ENV_FILE = join(TEST_DIR, '.env');
 
 // Create a verifier for resolving CLI-created DIDs.
 // TestCryptoImplementation.verify() does generic ed25519 verification
 // using the public key from the proof, so a generic instance works.
 let verifier: TestCryptoImplementation;
-let savedEnv: string | null = null;
 
 // Run a CLI command as a subprocess. --env-file=.env is passed directly to
 // node so that process.env is populated from .env on startup.
 function runCli(args: string[]) {
-  const result = spawnSync(process.execPath, ['--env-file=.env', '--import', 'tsx/esm', 'src/cli/index.ts', ...args], {
-    cwd: process.cwd(),
+  const result = spawnSync(process.execPath, ['--env-file=.env', '--import', 'tsx/esm', CLI_ENTRY, ...args], {
+    cwd: TEST_DIR,
     encoding: 'utf8',
     env: process.env,
   });
@@ -31,35 +37,15 @@ beforeAll(async () => {
   const dummyKey = await generateTestVerificationMethod();
   verifier = new TestCryptoImplementation({ verificationMethod: dummyKey });
   fs.mkdirSync(TEST_DIR, { recursive: true });
-  // Save existing .env content so we can restore it after tests
-  try {
-    savedEnv = fs.readFileSync(ENV_FILE, 'utf8');
-  } catch {
-    savedEnv = null;
-  }
-  // Clear DID_VERIFICATION_METHODS from both the .env file and process.env.
-  // process.env takes precedence over --env-file values, so both must be cleaned.
-  try {
-    const content = savedEnv || '';
-    const cleaned = content
-      .split('\n')
-      .filter((l) => !l.startsWith('DID_VERIFICATION_METHODS='))
-      .join('\n');
-    fs.writeFileSync(ENV_FILE, cleaned);
-  } catch {}
+  // Start with a fresh, empty isolated .env — node's --env-file requires the file to exist.
+  fs.writeFileSync(ISOLATED_ENV_FILE, '');
+  // process.env takes precedence over --env-file values and is inherited by the CLI subprocess
+  // (see runCli's env: process.env), so clear it here too.
   delete process.env.DID_VERIFICATION_METHODS;
 });
 
 afterAll(() => {
   fs.rmSync(TEST_DIR, { recursive: true, force: true });
-  // Restore original .env content
-  if (savedEnv !== null) {
-    fs.writeFileSync(ENV_FILE, savedEnv);
-  } else {
-    try {
-      fs.unlinkSync(ENV_FILE);
-    } catch {}
-  }
 });
 
 // Helper function to create a temporary verification method file for CLI commands
