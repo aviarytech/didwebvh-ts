@@ -172,6 +172,7 @@ export const writeVerificationMethodToEnv = async (verificationMethod: Verificat
     console.log('Verification method written to .env file successfully.');
   } catch (error) {
     console.error('Error writing verification method to .env file:', error);
+    throw error;
   }
 };
 

@@ -591,33 +591,38 @@ async function handleGenerateWitnessProof(args: string[]) {
     throw new CliError('Must provide matching number of witness DIDs and secrets');
   }
 
-  const witnessSignersByDid: Record<string, Signer> = {};
-  const witnesses: { id: string }[] = [];
+  try {
+    const witnessSignersByDid: Record<string, Signer> = {};
+    const witnesses: { id: string }[] = [];
 
-  for (let i = 0; i < witnessDids.length; i++) {
-    const did = witnessDids[i];
-    const secret = witnessSecrets[i];
-    const { did: normalizedDid, keyMultibase: publicKeyMultibase } = parseDidKeyDid(did);
-    const vm: VerificationMethod = {
-      type: 'Multikey',
-      publicKeyMultibase,
-      secretKeyMultibase: secret,
-      purpose: 'authentication',
-    };
+    for (let i = 0; i < witnessDids.length; i++) {
+      const did = witnessDids[i];
+      const secret = witnessSecrets[i];
+      const { did: normalizedDid, keyMultibase: publicKeyMultibase } = parseDidKeyDid(did);
+      const vm: VerificationMethod = {
+        type: 'Multikey',
+        publicKeyMultibase,
+        secretKeyMultibase: secret,
+        purpose: 'authentication',
+      };
 
-    witnessSignersByDid[normalizedDid] = createCustomCrypto(vm);
-    witnesses.push({ id: normalizedDid });
+      witnessSignersByDid[normalizedDid] = createCustomCrypto(vm);
+      witnesses.push({ id: normalizedDid });
+    }
+
+    const witnessEntries = await signWitnessProofEntries(versionIds, witnesses, witnessSignersByDid);
+
+    const witnessFileContent = witnessEntries.map((entry) => ({
+      versionId: entry.versionId,
+      proof: entry.proof,
+    }));
+
+    fs.writeFileSync(output, JSON.stringify(witnessFileContent, null, 2));
+    console.log(`Witness proof file generated at ${output}`);
+  } catch (error) {
+    if (error instanceof CliError) throw error;
+    throw new CliError(`Error generating witness proof: ${error instanceof Error ? error.message : String(error)}`);
   }
-
-  const witnessEntries = await signWitnessProofEntries(versionIds, witnesses, witnessSignersByDid);
-
-  const witnessFileContent = witnessEntries.map((entry) => ({
-    versionId: entry.versionId,
-    proof: entry.proof,
-  }));
-
-  fs.writeFileSync(output, JSON.stringify(witnessFileContent, null, 2));
-  console.log(`Witness proof file generated at ${output}`);
 }
 
 type VerificationMethodType =

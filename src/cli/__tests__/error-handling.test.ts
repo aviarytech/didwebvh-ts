@@ -68,6 +68,58 @@ describe('CLI error handling', () => {
     }
   });
 
+  test('generate-witness-proof wraps a malformed witness DID as a CliError', async () => {
+    const originalArgv = process.argv;
+    process.argv = [
+      ...originalArgv.slice(0, 2),
+      'generate-witness-proof',
+      '--version-id',
+      '1-abc123',
+      '--witness-did',
+      'not-a-did-key',
+      '--witness-secret',
+      'z1Asecret',
+      '--output',
+      join(TEST_DIR, 'unused-witness-output.json'),
+    ];
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    try {
+      await expect(main()).resolves.toBe(1);
+      expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Error generating witness proof'));
+    } finally {
+      process.argv = originalArgv;
+      errorSpy.mockRestore();
+    }
+  });
+
+  test('handleCreate propagates a failure writing the verification method to .env as a CliError', async () => {
+    // writeVerificationMethodToEnv() resolves its target path to `${process.cwd()}/.env`. Making
+    // that path a directory forces its fs.writeFileSync call to fail (EISDIR), letting us verify
+    // the failure is rethrown and surfaced as a CliError instead of being silently swallowed.
+    const isolatedCwd = fs.mkdtempSync(join(TEST_DIR, 'env-write-failure-'));
+    const originalCwd = process.cwd();
+    fs.mkdirSync(join(isolatedCwd, '.env'));
+
+    process.chdir(isolatedCwd);
+    try {
+      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      try {
+        await expect(
+          handleCreate(['--address', 'example.com', '--portable', '--output', 'did.jsonl'])
+        ).rejects.toMatchObject({
+          name: 'CliError',
+          message: expect.stringContaining('Error creating DID'),
+        });
+      } finally {
+        logSpy.mockRestore();
+      }
+    } finally {
+      process.chdir(originalCwd);
+      fs.rmSync(isolatedCwd, { recursive: true, force: true });
+    }
+  });
+
   test('CLI errors expose their exit code', () => {
     expect(new CliError('invalid command', 2).exitCode).toBe(2);
   });
@@ -115,30 +167,27 @@ describe('CLI error handling', () => {
     });
 
     test('prints the stack trace for an unexpected, non-CliError error', async () => {
+      // 'generate-vm' has no dedicated handler wrapping errors as CliError — it runs inline in
+      // main()'s switch, so forcing an unexpected failure there (all other commands now wrap
+      // their errors as CliError, see handleGenerateWitnessProof) exercises main()'s generic,
+      // non-CliError catch branch that prints the full stack trace.
       const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const stringifySpy = vi.spyOn(JSON, 'stringify').mockImplementation(() => {
+        throw new Error('Unexpected JSON.stringify failure');
+      });
       const originalArgv = process.argv;
-      process.argv = [
-        ...originalArgv.slice(0, 2),
-        'generate-witness-proof',
-        '--version-id',
-        '1-abc',
-        '--witness-did',
-        'did:key:invalid',
-        '--witness-secret',
-        'zBAD',
-        '--output',
-        '/tmp/cli-error-handling-test-witness.json',
-      ];
+      process.argv = [...originalArgv.slice(0, 2), 'generate-vm'];
 
       try {
         const exitCode = await main();
         expect(exitCode).toBe(1);
         expect(errorSpy).toHaveBeenCalledTimes(1);
         const loggedValue = errorSpy.mock.calls[0][0];
-        expect(loggedValue).toEqual(expect.stringContaining('Error:'));
+        expect(loggedValue).toEqual(expect.stringContaining('Unexpected JSON.stringify failure'));
         expect(loggedValue).toEqual(expect.stringContaining(' at '));
       } finally {
         process.argv = originalArgv;
+        stringifySpy.mockRestore();
       }
     });
   });
