@@ -357,12 +357,10 @@ export async function handleVerifyProofs(args: string[]) {
   const witnessFile = options['witness-file'] as string | undefined;
 
   if (!logFile) {
-    console.error('Log file is required for verify-proofs command');
-    process.exit(1);
+    throw new CliError('Log file is required for verify-proofs command');
   }
   if (!witnessFile) {
-    console.error('Witness file is required for verify-proofs command');
-    process.exit(1);
+    throw new CliError('Witness file is required for verify-proofs command');
   }
 
   try {
@@ -376,13 +374,13 @@ export async function handleVerifyProofs(args: string[]) {
       verifier: createCustomCrypto(),
     });
     console.log(JSON.stringify(result, null, 2));
-    if (!result.verified) {
-      process.exitCode = 1;
-    }
+    // Note: result.verified being false is a successful check with a negative outcome, not an
+    // error. It is not thrown as a CliError here; callers (e.g. main()) map it to a non-zero
+    // exit code based on the returned result.
     return result;
   } catch (error) {
-    console.error('Error verifying witness proofs:', error);
-    process.exit(1);
+    if (error instanceof CliError) throw error;
+    throw new CliError(`Error verifying witness proofs: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -695,9 +693,10 @@ export async function main(): Promise<number> {
       case 'resolve':
         await handleResolve(args);
         return 0;
-      case 'verify-proofs':
-        await handleVerifyProofs(args);
-        return 0;
+      case 'verify-proofs': {
+        const result = await handleVerifyProofs(args);
+        return result.verified ? 0 : 1;
+      }
       case 'update':
         await handleUpdate(args);
         return 0;

@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, afterEach, describe, expect, test, vi } from 'vitest';
+import { generateTestVerificationMethod } from '../../../test/utils.js';
 import { CliError, handleCreate, handleDeactivate, handleResolve, handleUpdate, main } from '../index.js';
 
 const TEST_DIR = join(process.cwd(), 'test', 'temp-cli-error-handling');
@@ -38,6 +39,32 @@ describe('CLI error handling', () => {
       await expect(main()).resolves.toBe(1);
     } finally {
       process.argv = originalArgv;
+    }
+  });
+
+  test('main returns exit code 1 when verify-proofs reports an unsatisfied witness requirement', async () => {
+    const logFile = join(TEST_DIR, 'verify-proofs-unsatisfied.jsonl');
+    const witnessFile = join(TEST_DIR, 'verify-proofs-unsatisfied-witness.json');
+
+    // A did:key witness identifier is enough to create a witnessed DID; no proof for it will be
+    // supplied, so verifyWitnessProofs should report the requirement as unsatisfied rather than
+    // throw.
+    const witnessVm = await generateTestVerificationMethod();
+    const witnessDid = `did:key:${witnessVm.publicKeyMultibase}`;
+
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const created = await handleCreate(['--address', 'example.com', '--portable', '--witness', witnessDid]);
+    fs.writeFileSync(logFile, `${created.log.map((entry) => JSON.stringify(entry)).join('\n')}\n`);
+    fs.writeFileSync(witnessFile, '[]');
+
+    const originalArgv = process.argv;
+    process.argv = [...originalArgv.slice(0, 2), 'verify-proofs', '--log', logFile, '--witness-file', witnessFile];
+
+    try {
+      await expect(main()).resolves.toBe(1);
+    } finally {
+      process.argv = originalArgv;
+      logSpy.mockRestore();
     }
   });
 
